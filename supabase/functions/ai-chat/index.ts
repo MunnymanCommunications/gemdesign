@@ -113,9 +113,7 @@ serve(async (req) => {
         documentsContext += `- ${doc.filename} (${doc.mime_type})\n`;
         
         if (doc.extracted_text && doc.extracted_text.length > 50 && !doc.extracted_text.includes('endstream') && !doc.extracted_text.includes('xref')) {
-          const truncatedContent = doc.extracted_text.length > 1500 ? 
-            doc.extracted_text.substring(0, 1500) + '...' : doc.extracted_text;
-          documentsContext += `  Content: ${truncatedContent}\n`;
+          documentsContext += `  Content: ${doc.extracted_text}\n`;
         }
       }
     }
@@ -126,9 +124,7 @@ serve(async (req) => {
         documentsContext += `- ${doc.filename} (${doc.mime_type})\n`;
         
         if (doc.extracted_text && doc.extracted_text.length > 50 && !doc.extracted_text.includes('endstream') && !doc.extracted_text.includes('xref')) {
-          const truncatedContent = doc.extracted_text.length > 1500 ? 
-            doc.extracted_text.substring(0, 1500) + '...' : doc.extracted_text;
-          documentsContext += `  Content: ${truncatedContent}\n`;
+          documentsContext += `  Content: ${doc.extracted_text}\n`;
         }
       }
     }
@@ -362,6 +358,21 @@ serve(async (req) => {
               else console.log('Updated conversation priority:', score, priorityLevel);
             });
         }
+      }
+
+      // Estimate token usage
+      const estimateTokens = (text: string) => Math.round(text.length / 4);
+      const promptTokens = estimateTokens(JSON.stringify(messages));
+      const responseTokens = estimateTokens(responseText);
+      const totalTokens = promptTokens + responseTokens;
+
+      // Update user's token usage
+      const { error: tokenUpdateError } = await supabase.rpc('increment_token_usage', {
+        user_id: userId,
+        tokens: totalTokens
+      });
+      if (tokenUpdateError) {
+        console.error('Error updating token usage:', tokenUpdateError);
       }
 
       return new Response(JSON.stringify({ response: responseText }), {

@@ -19,6 +19,7 @@ interface UserStats {
   conversation_count: number;
   message_count: number;
   last_activity: string | null;
+  token_usage: number;
 }
 
 interface GlobalStats {
@@ -55,7 +56,8 @@ const UserAnalytics = () => {
           email,
           full_name,
           company,
-          created_at
+          created_at,
+          token_usage
         `);
 
       if (usersError) throw usersError;
@@ -148,7 +150,8 @@ const UserAnalytics = () => {
         document_count: docCounts[user.id] || 0,
         conversation_count: convCounts[user.id] || 0,
         message_count: msgCounts.counts[user.id] || 0,
-        last_activity: msgCounts.lastActivity[user.id] || null
+        last_activity: msgCounts.lastActivity[user.id] || null,
+        token_usage: user.token_usage || 0
       })) || [];
 
       setUsers(transformedUsers);
@@ -346,6 +349,10 @@ const UserAnalytics = () => {
                         : 'Never'
                       }
                     </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Token Usage</p>
+                    <p className="font-medium">{user.token_usage.toLocaleString()}</p>
                   </div>
                 </div>
                 
