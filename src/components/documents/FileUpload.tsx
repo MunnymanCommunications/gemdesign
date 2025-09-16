@@ -98,40 +98,6 @@ const FileUpload = ({
             );
           } catch (error) {
             console.warn('Client-side PDF extraction failed:', error);
-=======
-        // Extract text from PDF if it's a PDF file using edge function
-        let extractedText = null;
-        if (file.type === 'application/pdf') {
-          try {
-            console.log('Calling PDF extractor for file:', uploadData.path);
-            
-            const { data: extractorResponse, error: extractorError } = await supabase.functions
-              .invoke('pdf-extractor', {
-                body: { 
-                  filePath: uploadData.path, 
-                  bucket: 'documents' 
-                }
-              });
-
-            console.log('PDF extractor response:', extractorResponse);
-            
-            if (extractorError) {
-              console.warn('PDF extraction failed, proceeding without text extraction:', extractorError);
-            } else if (extractorResponse?.success && extractorResponse?.content) {
-              extractedText = extractorResponse.content;
-              console.log('PDF text extracted successfully, length:', extractedText.length);
-              
-              setUploadingFiles(prev =>
-                prev.map(f =>
-                  f.id === uploadingFile.id
-                    ? { ...f, progress: 75, status: 'processing', message: 'Text extracted successfully' }
-                    : f
-                )
-              );
-            }
-          } catch (error) {
-            console.warn('Error calling PDF extractor, proceeding without text extraction:', error);
->>>>>>> f0ed391c870d6673473ab6bcc6a75fd8313e3317
           }
         }
 
