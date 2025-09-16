@@ -51,7 +51,7 @@ const GlobalAIDocumentUpload = () => {
   const handleFileUpload = async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
 
-    const file = acceptedFiles[0];
+    const file = acceptedFiles[0]; // Take the first file from the array
     
     // Validate file type
     if (!file.type.includes('pdf') && !file.type.includes('document') && !file.type.includes('image')) {
@@ -274,7 +274,7 @@ const GlobalAIDocumentUpload = () => {
                       <p className="font-medium">{doc.filename}</p>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Badge className={getFileTypeColor(doc.mime_type)}>
-                          {doc.mime_type.split('/')[1]?.toUpperCase()}
+                          {doc.mime_type.split('/')?.toUpperCase()}
                         </Badge>
                         <span>{formatFileSize(doc.file_size)}</span>
                         <span>•</span>
