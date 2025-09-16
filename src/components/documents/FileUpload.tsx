@@ -80,7 +80,6 @@ const FileUpload = ({
           )
         );
 
-<<<<<<< HEAD
         // Extract text from PDF if it's a PDF file using client-side library
         let extractedText = null;
         if (file.name.toLowerCase().endsWith('.pdf')) {
