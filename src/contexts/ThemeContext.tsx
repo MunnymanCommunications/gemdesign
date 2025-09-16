@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-
+import { supabase } from '@/integrations/supabase/client';
 interface UserTheme {
   logo_url?: string;
   primary_color: string;
@@ -50,22 +50,22 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const loadTheme = () => {
+  const loadTheme = async () => {
     if (user) {
-      const savedTheme = localStorage.getItem(`user_theme_${user.id}`);
-      if (savedTheme) {
-        try {
-          const parsedTheme = JSON.parse(savedTheme);
-          setTheme(parsedTheme);
-          applyTheme(parsedTheme);
-        } catch (error) {
-          console.error('Error parsing saved theme:', error);
-        }
+      const { data, error } = await supabase
+        .from('user_themes')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (data) {
+        setTheme(data);
+        applyTheme(data);
       } else {
         applyTheme(defaultTheme);
       }
     } else {
-        applyTheme(defaultTheme);
+      applyTheme(defaultTheme);
     }
   };
 

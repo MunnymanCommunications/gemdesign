@@ -398,6 +398,7 @@ export type Database = {
           phone: string | null
           state: string | null
           tax_id: string | null
+          token_usage: number | null
           updated_at: string
           website: string | null
           zip_code: string | null
@@ -414,6 +415,7 @@ export type Database = {
           phone?: string | null
           state?: string | null
           tax_id?: string | null
+          token_usage?: number | null
           updated_at?: string
           website?: string | null
           zip_code?: string | null
@@ -430,6 +432,7 @@ export type Database = {
           phone?: string | null
           state?: string | null
           tax_id?: string | null
+          token_usage?: number | null
           updated_at?: string
           website?: string | null
           zip_code?: string | null
@@ -676,6 +679,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_token_usage: {
+        Args: { tokens: number; user_id_param: string }
+        Returns: undefined
       }
     }
     Enums: {

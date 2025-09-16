@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import Layout from '@/components/layout/Layout';
@@ -151,13 +152,19 @@ const Theme = () => {
       }
 
       const themeToSave = { ...theme, user_id: user.id, logo_url: logoUrl };
-      localStorage.setItem(`user_theme_${user.id}`, JSON.stringify(themeToSave));
+      
+      const { error } = await supabase
+        .from('user_themes')
+        .upsert(themeToSave, { onConflict: 'user_id' });
+
+      if (error) {
+        throw new Error('Failed to save theme');
+      }
+
       setTheme(themeToSave);
       
       setLogoFile(null);
       toast.success('Theme saved successfully!');
-      
-      // TODO: Save theme to user_themes table in Supabase
       console.log('Theme saved:', themeToSave);
     } catch (error) {
       console.error('Error saving theme:', error);

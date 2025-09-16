@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { FileText, Download, Eye, Printer } from 'lucide-react';
 
-interface HelpfulWorksheet {
+interface HelpfulDocument {
   id: string;
   filename: string;
   file_path: string;
@@ -20,7 +20,7 @@ interface HelpfulWorksheet {
 
 const HelpfulDocuments = () => {
   const { user } = useAuth();
-  const [worksheets, setWorksheets] = useState<HelpfulWorksheet[]>([]);
+  const [worksheets, setWorksheets] = useState<HelpfulDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ const HelpfulDocuments = () => {
   const fetchHelpfulWorksheets = async () => {
     try {
       const { data, error } = await supabase
-        .from('helpful_worksheets')
+        .from('helpful_documents')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -46,10 +46,10 @@ const HelpfulDocuments = () => {
     }
   };
 
-  const downloadWorksheet = async (worksheet: HelpfulWorksheet) => {
+  const downloadWorksheet = async (worksheet: HelpfulDocument) => {
     try {
       const { data, error } = await supabase.storage
-        .from('documents')
+        .from('helpful_documents')
         .download(worksheet.file_path);
 
       if (error) throw error;
@@ -70,10 +70,10 @@ const HelpfulDocuments = () => {
     }
   };
 
-  const viewWorksheet = async (worksheet: HelpfulWorksheet) => {
+  const viewWorksheet = async (worksheet: HelpfulDocument) => {
     try {
       const { data, error } = await supabase.storage
-        .from('documents')
+        .from('helpful_documents')
         .createSignedUrl(worksheet.file_path, 3600); // 1 hour expiry
 
       if (error) throw error;
@@ -87,10 +87,10 @@ const HelpfulDocuments = () => {
     }
   };
 
-  const printWorksheet = async (worksheet: HelpfulWorksheet) => {
+  const printWorksheet = async (worksheet: HelpfulDocument) => {
     try {
       const { data, error } = await supabase.storage
-        .from('documents')
+        .from('helpful_documents')
         .createSignedUrl(worksheet.file_path, 3600);
 
       if (error) throw error;
@@ -144,15 +144,15 @@ const HelpfulDocuments = () => {
   return (
     <Layout>
       <SEO
-        title="Helpful Worksheets — DesignR AI"
-        description="Access helpful worksheets and resources provided by administrators."
+        title="Helpful Documents — DesignR AI"
+        description="Access helpful documents and resources provided by administrators."
         canonical="/helpful-documents"
       />
       <div className="max-w-6xl mx-auto space-y-6">
         <header>
-          <h1 className="text-3xl font-bold">Helpful Worksheets</h1>
+          <h1 className="text-3xl font-bold">Helpful Documents</h1>
           <p className="text-muted-foreground mt-2">
-            Access worksheets, templates, and resources provided by administrators
+            Access documents, templates, and resources provided by administrators
           </p>
         </header>
 
@@ -160,9 +160,9 @@ const HelpfulDocuments = () => {
           <Card>
             <CardContent className="text-center py-8">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Worksheets Available</h3>
+              <h3 className="text-lg font-semibold mb-2">No Documents Available</h3>
               <p className="text-muted-foreground">
-                No helpful worksheets have been uploaded by administrators yet.
+                No helpful documents have been uploaded by administrators yet.
               </p>
             </CardContent>
           </Card>
@@ -226,7 +226,7 @@ const HelpfulDocuments = () => {
         {worksheets.length > 0 && (
           <div className="text-center pt-4">
             <p className="text-sm text-muted-foreground">
-              {worksheets.length} worksheet{worksheets.length !== 1 ? 's' : ''} available
+              {worksheets.length} document{worksheets.length !== 1 ? 's' : ''} available
             </p>
           </div>
         )}

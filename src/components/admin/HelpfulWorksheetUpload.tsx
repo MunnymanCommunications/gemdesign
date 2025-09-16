@@ -33,7 +33,7 @@ const HelpfulWorksheetUpload = () => {
   const fetchHelpfulWorksheets = async () => {
     try {
       const { data, error } = await supabase
-        .from('helpful_worksheets')
+        .from('helpful_documents')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -73,11 +73,11 @@ const HelpfulWorksheetUpload = () => {
       const fileName = customName.trim() 
         ? `${customName.replace(/[^a-zA-Z0-9.-]/g, '_')}.${file.name.split('.').pop()}`
         : file.name;
-      const filePath = `helpful-worksheets/${timestamp}_${fileName}`;
+      const filePath = `helpful-documents/${timestamp}_${fileName}`;
 
       // Upload file to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('documents')
+        .from('helpful_documents')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -89,7 +89,7 @@ const HelpfulWorksheetUpload = () => {
 
       // Save worksheet metadata to database (no text extraction needed for worksheets)
       const { data: docData, error: docError } = await supabase
-        .from('helpful_worksheets')
+        .from('helpful_documents')
         .insert({
           filename: fileName,
           file_path: filePath,
@@ -122,14 +122,14 @@ const HelpfulWorksheetUpload = () => {
     try {
       // Delete from storage
       const { error: storageError } = await supabase.storage
-        .from('documents')
+        .from('helpful_documents')
         .remove([worksheet.file_path]);
 
       if (storageError) throw storageError;
 
       // Delete from database
       const { error: dbError } = await supabase
-        .from('helpful_worksheets')
+        .from('helpful_documents')
         .delete()
         .eq('id', worksheet.id);
 
