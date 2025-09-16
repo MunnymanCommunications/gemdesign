@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import Layout from '@/components/layout/Layout';
 import SEO from '@/components/seo/SEO';
@@ -34,15 +35,8 @@ interface UserTheme {
 
 const Theme = () => {
   const { user } = useAuth();
-  const [theme, setTheme] = useState<UserTheme>({
-    user_id: user?.id || '',
-    primary_color: '#8b5cf6',
-    secondary_color: '#a855f7',
-    accent_color: '#ec4899',
-    background_color: '#ffffff',
-    text_color: '#1f2937'
-  });
-  const [loading, setLoading] = useState(true);
+  const { theme, setTheme, loadTheme } = useTheme();
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
@@ -90,35 +84,21 @@ const Theme = () => {
     }
   ];
 
-  useEffect(() => {
-    if (user) {
-      // For now, load from localStorage until database types are updated
-      const savedTheme = localStorage.getItem(`user_theme_${user.id}`);
-      if (savedTheme) {
-        try {
-          const parsedTheme = JSON.parse(savedTheme);
-          setTheme(prev => ({ ...prev, ...parsedTheme }));
-        } catch (error) {
-          console.error('Error parsing saved theme:', error);
-        }
-      }
-    }
-    setLoading(false);
-  }, [user]);
 
   const handleColorChange = (colorType: keyof UserTheme, value: string) => {
-    setTheme(prev => ({ ...prev, [colorType]: value }));
+    setTheme({ ...theme, [colorType]: value });
   };
 
   const applyPresetTheme = (preset: any) => {
-    setTheme(prev => ({
-      ...prev,
+    const newTheme = {
+      ...theme,
       primary_color: preset.primary_color,
       secondary_color: preset.secondary_color,
       accent_color: preset.accent_color,
       background_color: preset.background_color,
-      text_color: preset.text_color
-    }));
+      text_color: preset.text_color,
+    };
+    setTheme(newTheme);
     toast.success(`Applied ${preset.name} theme`);
   };
 
@@ -135,7 +115,7 @@ const Theme = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
-          setTheme(prev => ({ ...prev, logo_url: e.target!.result as string }));
+          setTheme({ ...theme, logo_url: e.target!.result as string });
         }
       };
       reader.readAsDataURL(file);
@@ -149,16 +129,35 @@ const Theme = () => {
 
     setSaving(true);
     try {
-      // For now, save to localStorage until database integration is complete
-      const themeToSave = { ...theme, user_id: user.id };
+      let logoUrl = theme.logo_url;
+
+      if (logoFile) {
+        const fileExt = logoFile.name.split('.').pop();
+        const fileName = `${user.id}/logo.${fileExt}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('theme_assets')
+          .upload(fileName, logoFile, { upsert: true });
+
+        if (uploadError) {
+          throw new Error('Failed to upload logo');
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('theme_assets')
+          .getPublicUrl(uploadData.path);
+        
+        logoUrl = urlData.publicUrl;
+      }
+
+      const themeToSave = { ...theme, user_id: user.id, logo_url: logoUrl };
       localStorage.setItem(`user_theme_${user.id}`, JSON.stringify(themeToSave));
+      setTheme(themeToSave);
       
       setLogoFile(null);
       toast.success('Theme saved successfully!');
       
-      // TODO: Once database types are updated, integrate with Supabase:
-      // - Upload logo to storage if logoFile exists
-      // - Save theme to user_themes table
+      // TODO: Save theme to user_themes table in Supabase
       console.log('Theme saved:', themeToSave);
     } catch (error) {
       console.error('Error saving theme:', error);
@@ -169,21 +168,22 @@ const Theme = () => {
   };
 
   const removeLogo = () => {
-    setTheme(prev => ({ ...prev, logo_url: undefined }));
+    setTheme({ ...theme, logo_url: undefined });
     setLogoFile(null);
     toast.success('Logo removed');
   };
 
   const resetToDefault = () => {
-    setTheme({
-      ...theme,
+    const defaultTheme = {
+      user_id: user?.id || '',
       primary_color: '#8b5cf6',
       secondary_color: '#a855f7',
       accent_color: '#ec4899',
       background_color: '#ffffff',
       text_color: '#1f2937',
-      logo_url: undefined
-    });
+      logo_url: undefined,
+    };
+    setTheme(defaultTheme);
     setLogoFile(null);
     toast.success('Reset to default theme');
   };
