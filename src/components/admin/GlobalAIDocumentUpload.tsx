@@ -51,7 +51,7 @@ const GlobalAIDocumentUpload = () => {
   const handleFileUpload = async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
 
-    const file = acceptedFiles[0];
+    const file = acceptedFiles[0]; // Take the first file from the array
     
     // Validate file type
     if (!file.type.includes('pdf') && !file.type.includes('document') && !file.type.includes('image')) {
@@ -88,7 +88,6 @@ const GlobalAIDocumentUpload = () => {
 
       setUploadProgress(50);
 
-<<<<<<< HEAD
       // Extract text from PDFs using the client-side extractor
       let extractedText = null;
       if (file.name.toLowerCase().endsWith('.pdf')) {
@@ -99,27 +98,6 @@ const GlobalAIDocumentUpload = () => {
           console.log('PDF text extracted successfully, length:', extractedText.length);
         } catch (error) {
           console.warn('Client-side PDF extraction failed:', error);
-=======
-      // Extract text from PDFs using the edge function
-      let extractedText = null;
-      if (file.type === 'application/pdf') {
-        try {
-          const { data: extractData, error: extractError } = await supabase.functions
-            .invoke('pdf-extractor', {
-              body: { 
-                filePath: filePath,
-                bucket: 'documents'
-              }
-            });
-
-          if (extractError) {
-            console.warn('Text extraction failed:', extractError);
-          } else if (extractData?.success && extractData?.content) {
-            extractedText = extractData.content;
-          }
-        } catch (extractError) {
-          console.warn('Text extraction failed:', extractError);
->>>>>>> f0ed391c870d6673473ab6bcc6a75fd8313e3317
         }
       }
 
@@ -296,7 +274,7 @@ const GlobalAIDocumentUpload = () => {
                       <p className="font-medium">{doc.filename}</p>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Badge className={getFileTypeColor(doc.mime_type)}>
-                          {doc.mime_type.split('/')[1]?.toUpperCase()}
+                          {doc.mime_type.split('/')?.toUpperCase()}
                         </Badge>
                         <span>{formatFileSize(doc.file_size)}</span>
                         <span>•</span>
