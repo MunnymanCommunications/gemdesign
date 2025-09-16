@@ -86,8 +86,9 @@ const Theme = () => {
   ];
 
 
-  const handleColorChange = (colorType: keyof UserTheme, value: string) => {
-    setTheme({ ...theme, [colorType]: value });
+  const handleColorChange = async (colorType: keyof UserTheme, value: string) => {
+    await setTheme({ ...theme, [colorType]: value });
+    await saveTheme();
   };
 
   const applyPresetTheme = (preset: any) => {
