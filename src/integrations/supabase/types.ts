@@ -289,6 +289,36 @@ export type Database = {
         }
         Relationships: []
       }
+      helpful_documents: {
+        Row: {
+          created_at: string
+          file_path: string
+          file_size: number
+          filename: string
+          id: string
+          mime_type: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_path: string
+          file_size: number
+          filename: string
+          id?: string
+          mime_type: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_path?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          mime_type?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       helpful_worksheets: {
         Row: {
           created_at: string

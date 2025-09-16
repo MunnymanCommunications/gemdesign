@@ -72,7 +72,7 @@ const HelpfulWorksheetUpload = () => {
       const timestamp = Date.now();
       const fileName = customName.trim() 
         ? `${customName.replace(/[^a-zA-Z0-9.-]/g, '_')}.${file.name.split('.').pop()}`
-        : file.name;
+        : file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const filePath = `helpful-documents/${timestamp}_${fileName}`;
 
       // Upload file to Supabase Storage
