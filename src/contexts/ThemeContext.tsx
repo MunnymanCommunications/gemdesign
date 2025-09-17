@@ -32,7 +32,7 @@ const ThemeContext = createContext<ThemeContextType>({
 
 export const useTheme = () => useContext(ThemeContext);
 
-export const ThemeProvider = ({ children }: { children: ReactNode }): ReactNode => {
+export const ThemeProvider = ({ children }: { children: ReactNode }): JSX.Element => {
   const { user } = useAuth();
   const [theme, setTheme] = useState<UserTheme>(defaultTheme);
 
@@ -60,8 +60,6 @@ export const ThemeProvider = ({ children }: { children: ReactNode }): ReactNode 
 
       if (data) {
         setTheme(data);
-      if (data) {
-        setTheme(data);
         applyTheme(data);
       } else {
         setTheme(defaultTheme);
@@ -70,7 +68,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }): ReactNode 
     } else {
       setTheme(defaultTheme);
       applyTheme(defaultTheme);
-    }
+    };
   };
 
   useEffect(() => {
@@ -90,5 +88,5 @@ export const ThemeProvider = ({ children }: { children: ReactNode }): ReactNode 
     <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
-  )
-};
+  );
+}
