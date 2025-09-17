@@ -1,0 +1,3 @@
+[submodule "src/pages/security-assessment"]
+	path = src/pages/security-assessment
+	url = https://github.com/MunnymanCommunications/latestsecurityassesment.git

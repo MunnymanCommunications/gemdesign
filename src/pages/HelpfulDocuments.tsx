@@ -20,16 +20,16 @@ interface HelpfulDocument {
 
 const HelpfulDocuments = () => {
   const { user } = useAuth();
-  const [worksheets, setWorksheets] = useState<HelpfulDocument[]>([]);
+  const [helpfulDocuments, setHelpfulDocuments] = useState<HelpfulDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
-      fetchHelpfulWorksheets();
+      fetchHelpfulDocuments();
     }
   }, [user]);
 
-  const fetchHelpfulWorksheets = async () => {
+  const fetchHelpfulDocuments = async () => {
     try {
       const { data, error } = await supabase
         .from('helpful_documents')
@@ -37,10 +37,10 @@ const HelpfulDocuments = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setWorksheets(data || []);
+      setHelpfulDocuments(data || []);
     } catch (error) {
-      console.error('Error fetching helpful worksheets:', error);
-      toast.error('Failed to load worksheets');
+      console.error('Error fetching helpful helpful documents:', error);
+      toast.error('Failed to load helpful documents');
     } finally {
       setLoading(false);
     }
@@ -134,7 +134,7 @@ const HelpfulDocuments = () => {
       <Layout>
         <div className="max-w-6xl mx-auto">
           <div className="text-center py-8">
-            <h2 className="text-2xl font-semibold mb-2">Loading Worksheets...</h2>
+            <h2 className="text-2xl font-semibold mb-2">Loading helpful documents...</h2>
           </div>
         </div>
       </Layout>
@@ -156,7 +156,7 @@ const HelpfulDocuments = () => {
           </p>
         </header>
 
-        {worksheets.length === 0 ? (
+        {helpfulDocuments.length === 0 ? (
           <Card>
             <CardContent className="text-center py-8">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -168,7 +168,7 @@ const HelpfulDocuments = () => {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {worksheets.map((worksheet) => (
+            {helpfulDocuments.map((document) => (
               <Card key={worksheet.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -223,10 +223,10 @@ const HelpfulDocuments = () => {
           </div>
         )}
 
-        {worksheets.length > 0 && (
+        {helpfulDocuments.length > 0 && (
           <div className="text-center pt-4">
             <p className="text-sm text-muted-foreground">
-              {worksheets.length} document{worksheets.length !== 1 ? 's' : ''} available
+              {helpfulDocuments.length} document{helpfulDocuments.length !== 1 ? 's' : ''} available
             </p>
           </div>
         )}

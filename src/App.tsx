@@ -2,6 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import ProRoute from '@/components/ProRoute';
+import SecurityAssessmentPage from '@/pages/security-assessment/App';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -44,6 +46,9 @@ const App = () => (
               <Route path="/admin" element={<Admin />} />
               <Route path="/get-started" element={<GetStarted />} />
               <Route path="/helpful-documents" element={<HelpfulDocuments />} />
+              <Route path="/security-assessment" element={<ProRoute />}>
+                <Route index element={<SecurityAssessmentPage />} />
+              </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

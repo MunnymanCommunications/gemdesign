@@ -86,9 +86,8 @@ const Theme = () => {
   ];
 
 
-  const handleColorChange = async (colorType: keyof UserTheme, value: string) => {
-    await setTheme({ ...theme, [colorType]: value });
-    await saveTheme();
+  const handleColorChange = (colorType: keyof UserTheme, value: string) => {
+    setTheme({ ...theme, [colorType]: value });
   };
 
   const applyPresetTheme = (preset: any) => {
@@ -211,7 +210,7 @@ const Theme = () => {
   return (
     <Layout>
       <SEO
-        title="Theme Customization — DesignR AI"
+        title="Theme Customization — Design Rite AI"
         description="Customize your personal theme with colors and logo"
         canonical="/theme"
       />
@@ -461,7 +460,7 @@ const Theme = () => {
                               className="h-8 w-8 object-contain"
                             />
                           )}
-                          <h3 className="text-lg font-semibold">DesignR AI Platform</h3>
+                          <h3 className="text-lg font-semibold">Design Rite AI Platform</h3>
                         </div>
                         <p className="text-sm opacity-75 mb-4">
                           Welcome to your personalized AI assistant platform

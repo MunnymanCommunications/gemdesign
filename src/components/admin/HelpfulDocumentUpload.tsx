@@ -19,7 +19,7 @@ interface HelpfulWorksheet {
   file_path: string;
 }
 
-const HelpfulWorksheetUpload = () => {
+const HelpfulDocumentUpload = () => {
   const [worksheets, setWorksheets] = useState<HelpfulWorksheet[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -282,4 +282,4 @@ const HelpfulWorksheetUpload = () => {
   );
 };
 
-export default HelpfulWorksheetUpload;
+export default HelpfulDocumentUpload;

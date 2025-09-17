@@ -69,7 +69,7 @@ const Navigation = () => {
         <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
           <div className="flex items-center justify-between flex-shrink-0 px-4">
             <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              DesignR AI
+              Design Rite AI
             </h1>
             <ThemeToggle />
           </div>
@@ -116,7 +116,7 @@ const Navigation = () => {
       <div className="lg:hidden">
         <div className="flex items-center justify-between p-4 bg-card border-b border-border">
           <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            DesignR AI
+            Design Rite AI
           </h1>
           <div className="flex items-center gap-2">
             <ThemeToggle />
