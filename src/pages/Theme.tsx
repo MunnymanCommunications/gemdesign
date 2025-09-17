@@ -234,7 +234,12 @@ const Theme = () => {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-6">
+{/* Customization Panel */}
+{/* Customization Panel */}
+{/* Customization Panel */}
+{/* Logo Upload */}
+{/* Logo Upload */}
           {/* Customization Panel */}
           <div className="space-y-6">
             {/* Logo Upload */}
@@ -280,8 +285,22 @@ const Theme = () => {
                     <Upload className="h-4 w-4" />
                     Ready to upload: {logoFile.name}
                   </div>
+{/* Color Customization */}
+{/* Color Customization */}
+{/* Color Customization */}
+{/* Color Customization */}
+{/* Color Customization */}
+{/* Color Customization */}
+{/* Color Customization */}
+{/* Color Customization */}
+{/* Color Customization */}
+{/* Color Customization */}
                 )}
               </CardContent>
+{/* Color Customization */}
+{/* Color Customization */}
+{/* Color Customization */}
+{/* Color Customization */}
             </Card>
 
             {/* Color Customization */}
@@ -294,7 +313,7 @@ const Theme = () => {
                 <CardDescription>Customize your theme colors</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="primary">Primary Color</Label>
                     <div className="flex gap-2">
@@ -354,19 +373,32 @@ const Theme = () => {
                     <div className="flex gap-2">
                       <Input
                         id="background"
+{/* Preset Themes */}
                         type="color"
+{/* Preset Themes */}
                         value={theme.background_color}
+{/* Preset Themes */}
                         onChange={(e) => handleColorChange('background_color', e.target.value)}
+{/* Preset Themes */}
                         className="w-16 h-10"
+{/* Preset Themes */}
                       />
+{/* Preset Themes */}
                       <Input
+{/* Preset Themes */}
+{/* Preset Themes */}
                         value={theme.background_color}
+{/* Preset Themes */}
                         onChange={(e) => handleColorChange('background_color', e.target.value)}
                         placeholder="#ffffff"
                       />
                     </div>
                   </div>
+{/* Preset Themes */}
+{/* Preset Themes */}
                 </div>
+{/* Preset Themes */}
+{/* Preset Themes */}
               </CardContent>
             </Card>
 
@@ -377,7 +409,7 @@ const Theme = () => {
                 <CardDescription>Quick start with pre-designed color schemes</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                   {presetThemes.map((preset, index) => (
                     <Button
                       key={index}
@@ -404,110 +436,6 @@ const Theme = () => {
                       </div>
                     </Button>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Preview Panel */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="h-5 w-5" />
-                  Preview
-                </CardTitle>
-                <CardDescription>See how your theme will look</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex gap-2">
-                    <Button 
-                      variant={previewMode === 'desktop' ? 'default' : 'outline'} 
-                      size="sm"
-                      onClick={() => setPreviewMode('desktop')}
-                    >
-                      <Monitor className="h-4 w-4 mr-2" />
-                      Desktop
-                    </Button>
-                    <Button 
-                      variant={previewMode === 'mobile' ? 'default' : 'outline'} 
-                      size="sm"
-                      onClick={() => setPreviewMode('mobile')}
-                    >
-                      <Smartphone className="h-4 w-4 mr-2" />
-                      Mobile
-                    </Button>
-                  </div>
-                  
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 bg-muted/5">
-                    <div 
-                      className={`mx-auto bg-white rounded-lg shadow-lg overflow-hidden ${
-                        previewMode === 'mobile' ? 'max-w-sm' : 'max-w-lg'
-                      }`}
-                      style={{ backgroundColor: theme.background_color, color: theme.text_color }}
-                    >
-                      <div 
-                        className="h-3" 
-                        style={{ backgroundColor: theme.primary_color }}
-                      />
-                      <div className="p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                          {theme.logo_url && (
-                            <img 
-                              src={theme.logo_url} 
-                              alt="Logo" 
-                              className="h-8 w-8 object-contain"
-                            />
-                          )}
-                          <h3 className="text-lg font-semibold">Design Rite AI Platform</h3>
-                        </div>
-                        <p className="text-sm opacity-75 mb-4">
-                          Welcome to your personalized AI assistant platform
-                        </p>
-                        <div className="space-y-2">
-                          <div 
-                            className="h-10 rounded text-white flex items-center justify-center text-sm font-medium"
-                            style={{ backgroundColor: theme.primary_color }}
-                          >
-                            Primary Button
-                          </div>
-                          <div 
-                            className="h-10 rounded border-2 text-sm flex items-center justify-center font-medium"
-                            style={{ 
-                              borderColor: theme.secondary_color,
-                              color: theme.secondary_color
-                            }}
-                          >
-                            Secondary Button
-                          </div>
-                          <div 
-                            className="h-10 rounded text-white flex items-center justify-center text-sm font-medium"
-                            style={{ backgroundColor: theme.accent_color }}
-                          >
-                            Accent Button
-                          </div>
-                        </div>
-                        <div className="mt-4 pt-4 border-t opacity-60">
-                          <div className="flex items-center justify-between text-xs">
-                            <span>Sample card content</span>
-                            <Badge 
-                              className="text-white"
-                              style={{ backgroundColor: theme.primary_color }}
-                            >
-                              Active
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-muted-foreground bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded border">
-                    <strong>Note:</strong> Theme customization is currently in preview mode. 
-                    Your theme settings are saved locally and will be fully integrated with the 
-                    platform in the next update.
-                  </div>
                 </div>
               </CardContent>
             </Card>

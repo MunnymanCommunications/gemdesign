@@ -51,24 +51,41 @@ export const ThemeProvider = ({ children }: { children: ReactNode }): JSX.Elemen
   };
 
   const loadTheme = async () => {
-    if (user) {
-      const { data, error } = await supabase
-        .from('user_themes')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+    if (!user) {
+      setTheme(defaultTheme);
+      applyTheme(defaultTheme);
+      return;
+    }
 
-      if (data) {
-        setTheme(data);
-        applyTheme(data);
+    const { data, error } = await supabase
+      .from('user_themes')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (data) {
+      setTheme(data);
+      applyTheme(data);
+    } else if (!error) {
+      // No theme found, so create a default one
+      const { data: newTheme, error: insertError } = await supabase
+        .from('user_themes')
+        .insert({ ...defaultTheme, user_id: user.id })
+        .select('*')
+        .single();
+      
+      if (newTheme) {
+        setTheme(newTheme);
+        applyTheme(newTheme);
       } else {
         setTheme(defaultTheme);
         applyTheme(defaultTheme);
       }
     } else {
+      // An actual error occurred
       setTheme(defaultTheme);
       applyTheme(defaultTheme);
-    };
+    }
   };
 
   useEffect(() => {
