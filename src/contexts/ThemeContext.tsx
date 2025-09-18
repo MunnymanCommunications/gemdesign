@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { hexToHsl } from '@/lib/utils';
 interface UserTheme {
   logo_url?: string;
   primary_color: string;
@@ -38,15 +39,15 @@ export const ThemeProvider = ({ children }: { children: ReactNode }): JSX.Elemen
 
   const applyTheme = (themeToApply: UserTheme) => {
     const root = document.documentElement;
-    root.style.setProperty('--primary', themeToApply.primary_color);
-    root.style.setProperty('--secondary', themeToApply.secondary_color);
-    root.style.setProperty('--accent', themeToApply.accent_color);
-    root.style.setProperty('--background', themeToApply.background_color);
-    root.style.setProperty('--foreground', themeToApply.text_color);
+    root.style.setProperty('--primary', hexToHsl(themeToApply.primary_color));
+    root.style.setProperty('--secondary', hexToHsl(themeToApply.secondary_color));
+    root.style.setProperty('--accent', hexToHsl(themeToApply.accent_color));
+    root.style.setProperty('--background', hexToHsl(themeToApply.background_color));
+    root.style.setProperty('--foreground', hexToHsl(themeToApply.text_color));
 
     const favicon = document.getElementById('favicon') as HTMLLinkElement;
     if (favicon) {
-      favicon.href = themeToApply.logo_url || '/favicon.ico';
+      favicon.href = themeToApply.logo_url ? `${themeToApply.logo_url}?v=${new Date().getTime()}` : '/favicon.ico';
     }
   };
 
