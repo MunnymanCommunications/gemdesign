@@ -170,8 +170,7 @@ const Theme = () => {
         throw new Error('Failed to save theme');
       }
 
-      setTheme(themeToSave);
-      
+      loadTheme();
       setLogoFile(null);
       toast.success('Theme saved successfully!');
       console.log('Theme saved:', themeToSave);
