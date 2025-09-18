@@ -47,7 +47,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }): JSX.Elemen
 
     const favicon = document.getElementById('favicon') as HTMLLinkElement;
     if (favicon) {
-      favicon.href = themeToApply.logo_url ? `${themeToApply.logo_url}?v=${new Date().getTime()}` : '/favicon.ico';
+      favicon.href = `/logo.png?v=${new Date().getTime()}`;
     }
   };
 

@@ -17,15 +17,15 @@ export const useRoles = () => {
       }
       setLoading(true);
       const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
+        .from('user_subscriptions')
+        .select('tier')
         .eq('user_id', user.id);
 
       if (error) {
         setError(error.message);
         setRoles([]);
       } else {
-        setRoles((data || []).map((r: any) => r.role));
+        setRoles((data || []).map((r: any) => r.tier));
       }
       setLoading(false);
     };
