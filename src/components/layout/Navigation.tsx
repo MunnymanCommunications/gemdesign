@@ -16,7 +16,8 @@ import {
   LogOut,
   User,
   Sun,
-  Moon
+  Moon,
+  Camera
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useRoles } from '@/hooks/useRoles';
@@ -45,6 +46,7 @@ const Navigation = () => {
     { path: '/chat', label: 'AI Assistant', icon: MessageSquare },
     { path: '/documents', label: 'Documents', icon: FileText },
     { path: '/business-tools', label: 'Business Tools', icon: Wrench },
+    { path: '/satellite-assessment', label: 'Satellite Camera Assessment', icon: Camera },
     { path: '/analytics', label: 'Analytics', icon: BarChart3 },
     { path: '/theme', label: 'Theme', icon: Palette },
     { path: '/subscription', label: 'Subscription', icon: CreditCard },
