@@ -34,6 +34,15 @@ interface UserTheme {
   updated_at?: string;
 }
 
+interface PresetTheme {
+  name: string;
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
+  background_color: string;
+  text_color: string;
+}
+
 const Theme = () => {
   const { user } = useAuth();
   const { theme, setTheme, loadTheme } = useTheme();
@@ -42,7 +51,7 @@ const Theme = () => {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
 
-  const presetThemes = [
+  const presetThemes: PresetTheme[] = [
     {
       name: 'Purple Gradient',
       primary_color: '#8b5cf6',
@@ -90,7 +99,7 @@ const Theme = () => {
     setTheme({ ...theme, [colorType]: value });
   };
 
-  const applyPresetTheme = (preset: any) => {
+  const applyPresetTheme = (preset: PresetTheme) => {
     const newTheme = {
       ...theme,
       primary_color: preset.primary_color,
@@ -285,16 +294,6 @@ const Theme = () => {
                     <Upload className="h-4 w-4" />
                     Ready to upload: {logoFile.name}
                   </div>
-{/* Color Customization */}
-{/* Color Customization */}
-{/* Color Customization */}
-{/* Color Customization */}
-{/* Color Customization */}
-{/* Color Customization */}
-{/* Color Customization */}
-{/* Color Customization */}
-{/* Color Customization */}
-{/* Color Customization */}
                 )}
               </CardContent>
 {/* Color Customization */}
@@ -373,31 +372,19 @@ const Theme = () => {
                     <div className="flex gap-2">
                       <Input
                         id="background"
-{/* Preset Themes */}
                         type="color"
-{/* Preset Themes */}
                         value={theme.background_color}
-{/* Preset Themes */}
                         onChange={(e) => handleColorChange('background_color', e.target.value)}
-{/* Preset Themes */}
                         className="w-16 h-10"
-{/* Preset Themes */}
                       />
-{/* Preset Themes */}
                       <Input
-{/* Preset Themes */}
-{/* Preset Themes */}
                         value={theme.background_color}
-{/* Preset Themes */}
                         onChange={(e) => handleColorChange('background_color', e.target.value)}
                         placeholder="#ffffff"
                       />
                     </div>
                   </div>
-{/* Preset Themes */}
-{/* Preset Themes */}
                 </div>
-{/* Preset Themes */}
 {/* Preset Themes */}
               </CardContent>
             </Card>
