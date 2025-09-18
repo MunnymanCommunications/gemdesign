@@ -128,6 +128,5 @@ export const generatePdfReport = async (
   }
   
   // Sanitize address for filename
-  const safeFilename = reportTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  pdf.save(`security_report_${safeFilename}.pdf`);
+  return pdf.output('blob');
 };

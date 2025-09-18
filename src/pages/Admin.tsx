@@ -18,6 +18,7 @@ import { useRoles } from '@/hooks/useRoles';
 import InviteTokenManager from '@/components/admin/InviteTokenManager';
 import UserAnalytics from '@/components/admin/UserAnalytics';
 import StripeManager from '@/components/admin/StripeManager';
+import UsageLimitsManager from '@/components/admin/UsageLimitsManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface AdminSettings {
@@ -564,6 +565,7 @@ You can reference uploaded documents to help with business tasks, generate invoi
             </CardContent>
           </Card>
         </div>
+        <UsageLimitsManager />
 
             {/* Save Button */}
             <div className="flex justify-end">

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { AnalysisStep, SecurityAnalysis, AssessmentMode } from './types';
 import { getAerialViewFromAddress, getSecurityAnalysis, MapsRequestDeniedError } from './services/geminiService';
 import { generatePdfReport } from './services/pdfGenerator';
@@ -15,6 +15,10 @@ import ZoomInIcon from './components/icons/ZoomInIcon';
 import ZoomOutIcon from './components/icons/ZoomOutIcon';
 import FileUpload from './components/FileUpload';
 import Layout from '@/components/layout/Layout';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useNavigate } from 'react-router-dom';
 
 const INITIAL_ZOOM = 19;
 const MIN_ZOOM = 17;
@@ -28,6 +32,9 @@ const SCALE_STEP = 0.2;
 const ARE_KEYS_CONFIGURED = import.meta.env?.VITE_API_KEY && import.meta.env?.VITE_MAPS_API_KEY;
 
 const SatelliteAssessmentPage: React.FC = () => {
+  const { user } = useAuth();
+  const { isPro } = useSubscription();
+  const navigate = useNavigate();
   const [location, setLocation] = useState('');
   const [aerialImage, setAerialImage] = useState<string | null>(null);
   const [securityAnalysis, setSecurityAnalysis] = useState<SecurityAnalysis | null>(null);
@@ -45,6 +52,42 @@ const SatelliteAssessmentPage: React.FC = () => {
   const [exteriorUploadImage, setExteriorUploadImage] = useState<string | null>(null);
 
   const aerialViewRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkUsage = async () => {
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('assessment_usage')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (data) {
+        const now = new Date();
+        const lastReset = new Date(data.last_reset_date);
+        const monthDiff = now.getMonth() - lastReset.getMonth() + (12 * (now.getFullYear() - lastReset.getFullYear()));
+
+        if (monthDiff >= 1) {
+          await supabase
+            .from('assessment_usage')
+            .update({ usage_count: 0, last_reset_date: new Date().toISOString() })
+            .eq('user_id', user.id);
+        } else {
+          const limit = isPro ? 50 : 10;
+          if (data.usage_count >= limit) {
+            navigate('/upgrade');
+          }
+        }
+      } else {
+        await supabase
+          .from('assessment_usage')
+          .insert({ user_id: user.id, usage_count: 0 });
+      }
+    };
+
+    checkUsage();
+  }, [user, isPro, navigate]);
   
   if (!ARE_KEYS_CONFIGURED) {
     return <ApiConfigurationMessage />;
@@ -124,10 +167,41 @@ const SatelliteAssessmentPage: React.FC = () => {
       );
       setSecurityAnalysis(analysis);
       setStep(AnalysisStep.COMPLETE);
+
+      if (user) {
+        const { data, error } = await supabase
+          .from('generated_documents')
+          .insert({
+            user_id: user.id,
+            document_type: 'Satellite Security Assessment',
+            title: location,
+            content: JSON.stringify(analysis),
+            client_name: user.email || 'Unknown',
+          });
+
+        if (error) {
+          console.error('Error saving analysis:', error);
+        }
+      }
+
+      if (user) {
+        const { data, error } = await supabase
+          .from('assessment_usage')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (data) {
+          await supabase
+            .from('assessment_usage')
+            .update({ usage_count: data.usage_count + 1 })
+            .eq('user_id', user.id);
+        }
+      }
     } catch (err) {
       handleError(err);
     }
-  }, [location, aerialImage, isLoading, markerCoords, assessmentMode]);
+  }, [location, aerialImage, isLoading, markerCoords, assessmentMode, user]);
 
   const handleGenerateReport = async () => {
     if (!aerialViewRef.current || !securityAnalysis || isGeneratingPdf) return;
@@ -136,7 +210,31 @@ const SatelliteAssessmentPage: React.FC = () => {
     setError('');
     try {
       const reportTitle = assessmentMode === 'exterior' ? location : 'Interior Security Plan';
-      await generatePdfReport(aerialViewRef.current, securityAnalysis, reportTitle);
+      const pdfBlob = await generatePdfReport(aerialViewRef.current, securityAnalysis, reportTitle);
+
+      if (user && pdfBlob) {
+        const fileName = `${user.id}/${reportTitle.replace(/ /g, '_')}_${new Date().getTime()}.pdf`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('generated_documents')
+          .upload(fileName, pdfBlob, { upsert: true });
+
+        if (uploadError) {
+          throw new Error('Failed to upload report');
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('generated_documents')
+          .getPublicUrl(uploadData.path);
+
+        const { error: updateError } = await supabase
+          .from('generated_documents')
+          .update({ file_path: urlData.publicUrl })
+          .eq('content', JSON.stringify(securityAnalysis));
+
+        if (updateError) {
+          console.error('Error updating file path:', updateError);
+        }
+      }
     } catch (err) {
        console.error("Failed to generate PDF:", err);
        const errorMessage = err instanceof Error ? `Failed to generate PDF: ${err.message}` : 'An unknown error occurred during PDF generation.';

@@ -34,6 +34,7 @@ export const useRoles = () => {
 
   const isAdmin = roles.includes('admin');
   const isModerator = roles.includes('moderator');
+  const isPro = roles.includes('pro');
 
-  return { roles, isAdmin, isModerator, loading, error };
+  return { roles, isAdmin, isModerator, isPro, loading, error };
 };

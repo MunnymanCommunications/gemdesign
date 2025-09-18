@@ -107,6 +107,33 @@ export type Database = {
         }
         Relationships: []
       }
+      assessment_usage: {
+        Row: {
+          created_at: string
+          id: string
+          last_reset_date: string
+          updated_at: string
+          usage_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_reset_date?: string
+          updated_at?: string
+          usage_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_reset_date?: string
+          updated_at?: string
+          usage_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           assessment_data: Json | null

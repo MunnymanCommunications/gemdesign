@@ -23,6 +23,7 @@ import GetStarted from "./pages/GetStarted";
 import HelpfulDocuments from './pages/HelpfulDocuments';
 import BrowserPDFExtractorPage from './pages/BrowserPDFExtractorPage';
 import SatelliteAssessmentPage from './pages/SatelliteAssessment';
+import UpgradePage from './pages/Upgrade';
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
                 <Route path="/get-started" element={<GetStarted />} />
                 <Route path="/helpful-documents" element={<HelpfulDocuments />} />
                 <Route path="/satellite-assessment" element={<SatelliteAssessmentPage />} />
+                <Route path="/upgrade" element={<UpgradePage />} />
                 <Route path="/security-assessment" element={<ProRoute />}>
                   <Route index element={<SecurityAssessmentPage />} />
                 </Route>
