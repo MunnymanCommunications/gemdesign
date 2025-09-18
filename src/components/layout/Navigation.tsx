@@ -68,7 +68,7 @@ const Navigation = () => {
       <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:bg-card lg:border-r lg:border-border">
         <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
           <div className="flex items-center justify-between flex-shrink-0 px-4">
-            <img src="/logo.png" alt="Stratagem Core AI Logo" className="h-10" />
+            <img src="/logo.png" alt="Design Rite Ai" className="h-10" />
             <ThemeToggle />
           </div>
           <div className="mt-8 flex flex-col flex-grow">
@@ -113,7 +113,7 @@ const Navigation = () => {
       {/* Mobile Navigation */}
       <div className="lg:hidden">
         <div className="flex items-center justify-between p-4 bg-card border-b border-border">
-          <img src="/logo.png" alt="Stratagem Core AI Logo" className="h-10" />
+          <img src="/logo.png" alt="Design Rite Ai" className="h-10" />
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
