@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+# Welcome to your Stratagem Core AI project
 
 ## Project info
 
@@ -8,15 +8,13 @@
 
 There are several ways of editing your application.
 
-**Use Lovable**
+**Getting Started**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a41a245f-46dd-4656-9131-4e576e6c3e84) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
+You can start by editing `src/pages/Index.tsx`.
 
 **Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+If you want to work locally using your own IDE, you can clone this repo and push changes.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -62,9 +60,9 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/a41a245f-46dd-4656-9131-4e576e6c3e84) and click on Share -> Publish.
+You can deploy this project to your hosting provider of choice.
 
-## Can I connect a custom domain to my Lovable project?
+## Can I connect a custom domain to my project?
 
 Yes, you can!
 
