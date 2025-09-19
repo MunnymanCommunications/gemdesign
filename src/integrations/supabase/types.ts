@@ -408,7 +408,7 @@ export type Database = {
           id?: string
           max_uses?: number
           subscription_tier?: string | null
-          target_role?: Database["public"]["Enums"]["app_role"]
+          target_role: Database["public"]["Enums"]["app_role"]
           token?: string
           updated_at?: string
           uses?: number
@@ -523,6 +523,69 @@ export type Database = {
           website?: string | null
           zip_code?: string | null
           role?: string | null
+        }
+        Relationships: []
+      },
+      user_documents: {
+        Row: {
+          created_at: string
+          extracted_text: string | null
+          file_path: string
+          file_size: number
+          filename: string
+          id: string
+          mime_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          extracted_text?: string | null
+          file_path: string
+          file_size: number
+          filename: string
+          id?: string
+          mime_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          extracted_text?: string | null
+          file_path?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          mime_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      },
+      user_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          max_documents: number
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_documents?: number
+          tier?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_documents?: number
+          tier?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
