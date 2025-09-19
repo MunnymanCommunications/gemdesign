@@ -6,6 +6,7 @@ import SEO from '@/components/seo/SEO';
 import FileUpload from '@/components/documents/FileUpload';
 import DocumentList from '@/components/documents/DocumentList';
 import GeneratedDocuments from '@/components/documents/GeneratedDocuments';
+import SecurityReportsList from '@/components/documents/SecurityReportsList';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -233,7 +234,10 @@ const Documents = () => {
         </div>
 
         {/* Generated Documents */}
-        <GeneratedDocuments />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <GeneratedDocuments />
+          <SecurityReportsList />
+        </div>
 
         {/* Document List */}
         <DocumentList refresh={refreshCount} />

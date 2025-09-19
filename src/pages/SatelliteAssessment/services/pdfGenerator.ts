@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { SecurityAnalysis } from '../types';
+import { supabase } from '@/integrations/supabase/client';
 
 const MARGIN = 15;
 const FONT_SIZE_NORMAL = 11;
@@ -128,5 +129,42 @@ export const generatePdfReport = async (
   }
   
   // Sanitize address for filename
-  return pdf.output('blob');
+  const pdfBlob = pdf.output('blob');
+  
+  // 1. Local save
+  const localUrl = URL.createObjectURL(pdfBlob);
+  const a = document.createElement('a');
+  a.href = localUrl;
+  a.download = `${reportTitle.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+  a.click();
+
+  // 2. Supabase upload
+  try {
+    const session = await supabase.auth.getSession();
+    const userId = session.data.session?.user.id;
+    if (!userId) throw new Error('User not authenticated');
+    
+    const filePath = `${userId}/${Date.now()}.pdf`;
+    const { error: uploadError } = await supabase.storage
+      .from('security-reports')
+      .upload(filePath, pdfBlob);
+
+    if (uploadError) throw uploadError;
+
+    // 3. Save metadata
+    const { error: dbError } = await supabase
+      .from('security_reports')
+      .insert({
+        user_id: userId,
+        company_name: reportTitle,
+        file_path: filePath
+      });
+
+    if (dbError) throw dbError;
+
+    return { success: true, blob: pdfBlob };
+  } catch (error) {
+    console.error('PDF upload failed:', error);
+    return { success: false, error, blob: pdfBlob };
+  }
 };

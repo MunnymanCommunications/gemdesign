@@ -442,6 +442,33 @@ export type Database = {
         }
         Relationships: []
       }
+      security_reports: {
+        Row: {
+          id: string
+          user_id: string
+          company_name: string
+          file_path: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          company_name: string
+          file_path: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          company_name?: string
+          file_path?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      },
       profiles: {
         Row: {
           address: string | null
