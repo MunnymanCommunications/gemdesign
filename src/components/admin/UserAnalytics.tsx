@@ -12,7 +12,7 @@ interface UserStats {
   full_name: string | null;
   company: string | null;
   created_at: string;
-  roles: string[];
+  role: string;
   subscription_tier: string;
   max_documents: number;
   document_count: number;
@@ -57,7 +57,8 @@ const UserAnalytics = () => {
           full_name,
           company,
           created_at,
-          token_usage
+          token_usage,
+          role
         `);
 
       if (usersError) throw usersError;
@@ -109,19 +110,6 @@ const UserAnalytics = () => {
 
       if (msgError) throw msgError;
 
-      // Get roles for each user
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-
-      if (rolesError) throw rolesError;
-
-      const userRoles: Record<string, string[]> = {};
-      rolesData?.forEach(role => {
-        if (!userRoles[role.user_id]) userRoles[role.user_id] = [];
-        userRoles[role.user_id].push(role.role);
-      });
-
       // Get subscriptions for each user
       const { data: subscriptionsData, error: subscriptionsError } = await supabase
         .from('user_subscriptions')
@@ -144,7 +132,7 @@ const UserAnalytics = () => {
         full_name: user.full_name,
         company: user.company,
         created_at: user.created_at,
-        roles: userRoles[user.id] || [],
+        role: user.role || 'user',
         subscription_tier: userSubscriptions[user.id]?.tier || 'base',
         max_documents: userSubscriptions[user.id]?.max_documents || 1,
         document_count: docCounts[user.id] || 0,
@@ -159,8 +147,8 @@ const UserAnalytics = () => {
       // Calculate global stats
       const stats: GlobalStats = {
         total_users: transformedUsers.length,
-        total_admins: transformedUsers.filter(u => u.roles.includes('admin')).length,
-        total_moderators: transformedUsers.filter(u => u.roles.includes('moderator')).length,
+        total_admins: transformedUsers.filter(u => u.role === 'admin').length,
+        total_moderators: transformedUsers.filter(u => u.role === 'moderator').length,
         total_documents: Object.values(docCounts).reduce((sum, count) => sum + count, 0),
         total_conversations: Object.values(convCounts).reduce((sum, count) => sum + count, 0),
         total_messages: Object.values(msgCounts.counts).reduce((sum, count) => sum + count, 0),
@@ -180,15 +168,15 @@ const UserAnalytics = () => {
     }
   };
 
-  const getRoleIcon = (roles: string[]) => {
-    if (roles.includes('admin')) return <Crown className="h-4 w-4 text-yellow-500" />;
-    if (roles.includes('moderator')) return <Shield className="h-4 w-4 text-blue-500" />;
+  const getRoleIcon = (role: string) => {
+    if (role === 'admin') return <Crown className="h-4 w-4 text-yellow-500" />;
+    if (role === 'moderator') return <Shield className="h-4 w-4 text-blue-500" />;
     return null;
   };
 
-  const getRoleBadge = (roles: string[]) => {
-    if (roles.includes('admin')) return <Badge className="bg-yellow-500 text-yellow-50">Admin</Badge>;
-    if (roles.includes('moderator')) return <Badge variant="secondary">Moderator</Badge>;
+  const getRoleBadge = (role: string) => {
+    if (role === 'admin') return <Badge className="bg-yellow-500 text-yellow-50">Admin</Badge>;
+    if (role === 'moderator') return <Badge variant="secondary">Moderator</Badge>;
     return <Badge variant="outline">User</Badge>;
   };
 
@@ -314,9 +302,9 @@ const UserAnalytics = () => {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      {getRoleIcon(user.roles)}
+                      {getRoleIcon(user.role)}
                       <h4 className="font-medium">{user.full_name || user.email}</h4>
-                      {getRoleBadge(user.roles)}
+                      {getRoleBadge(user.role)}
                     </div>
                     <p className="text-sm text-muted-foreground">{user.email}</p>
                     {user.company && (
