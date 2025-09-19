@@ -10,9 +10,9 @@ export const useRoles = () => {
     const checkAdminStatus = async () => {
       if (user) {
         const { data, error } = await supabase
-          .from('profiles')
+          .from('user_roles')
           .select('role')
-          .eq('id', user.id)
+          .eq('user_id', user.id)
           .single();
 
         if (error) {
