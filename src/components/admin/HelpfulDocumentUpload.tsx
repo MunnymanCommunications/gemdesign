@@ -74,10 +74,11 @@ const HelpfulDocumentUpload = () => {
         ? `${customName.replace(/[^a-zA-Z0-9.-]/g, '_')}.${file.name.split('.').pop()}`
         : file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const filePath = `helpful-documents/${timestamp}_${fileName}`;
+      const bucketName = 'helpful_documents';
 
       // Upload file to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('helpful_documents')
+        .from(bucketName)
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -87,12 +88,15 @@ const HelpfulDocumentUpload = () => {
 
       setUploadProgress(75);
 
+      // Get public URL
+      const publicURL = `https://gzgncmpytstovexfazdw.supabase.co/storage/v1/object/public/${bucketName}/${filePath}`;
+
       // Save worksheet metadata to database (no text extraction needed for worksheets)
       const { data: docData, error: docError } = await supabase
         .from('helpful_documents')
         .insert({
           filename: fileName,
-          file_path: filePath,
+          file_path: publicURL,
           file_size: file.size,
           mime_type: file.type
         })

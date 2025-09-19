@@ -46,72 +46,26 @@ const HelpfulDocuments = () => {
     }
   };
 
-  const downloadWorksheet = async (worksheet: HelpfulDocument) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('helpful_documents')
-        .download(worksheet.file_path);
-
-      if (error) throw error;
-
-      const url = URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = worksheet.filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      toast.success('Worksheet downloaded successfully');
-    } catch (error) {
-      console.error('Error downloading worksheet:', error);
-      toast.error('Failed to download worksheet');
-    }
+  const downloadWorksheet = (worksheet: HelpfulDocument) => {
+    window.open(worksheet.file_path, '_blank');
   };
 
-  const viewWorksheet = async (worksheet: HelpfulDocument) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('helpful_documents')
-        .createSignedUrl(worksheet.file_path, 3600); // 1 hour expiry
-
-      if (error) throw error;
-      
-      if (data?.signedUrl) {
-        window.open(data.signedUrl, '_blank');
-      }
-    } catch (error) {
-      console.error('Error viewing worksheet:', error);
-      toast.error('Failed to open worksheet');
-    }
+  const viewWorksheet = (worksheet: HelpfulDocument) => {
+    window.open(worksheet.file_path, '_blank');
   };
 
-  const printWorksheet = async (worksheet: HelpfulDocument) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('helpful_documents')
-        .createSignedUrl(worksheet.file_path, 3600);
-
-      if (error) throw error;
-      
-      if (data?.signedUrl) {
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = data.signedUrl;
-        document.body.appendChild(iframe);
-        
-        iframe.onload = () => {
-          iframe.contentWindow?.print();
-          setTimeout(() => {
-            document.body.removeChild(iframe);
-          }, 1000);
-        };
-      }
-    } catch (error) {
-      console.error('Error printing worksheet:', error);
-      toast.error('Failed to print worksheet');
-    }
+  const printWorksheet = (worksheet: HelpfulDocument) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = worksheet.file_path;
+    document.body.appendChild(iframe);
+    
+    iframe.onload = () => {
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 1000);
+    };
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -169,28 +123,28 @@ const HelpfulDocuments = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {helpfulDocuments.map((document) => (
-              <Card key={worksheet.id} className="hover:shadow-lg transition-shadow">
+              <Card key={document.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <FileText className="h-8 w-8 text-primary" />
-                    <Badge className={getFileTypeColor(worksheet.mime_type)}>
-                      {worksheet.mime_type.split('/')[1]?.toUpperCase()}
+                    <Badge className={getFileTypeColor(document.mime_type)}>
+                      {document.mime_type.split('/')[1]?.toUpperCase()}
                     </Badge>
                   </div>
                   <CardTitle className="text-lg leading-tight">
-                    {worksheet.filename}
+                    {document.filename}
                   </CardTitle>
                   <CardDescription>
                     <div className="flex justify-between items-center text-sm">
-                      <span>{formatFileSize(worksheet.file_size)}</span>
-                      <span>{new Date(worksheet.created_at).toLocaleDateString()}</span>
+                      <span>{formatFileSize(document.file_size)}</span>
+                      <span>{new Date(document.created_at).toLocaleDateString()}</span>
                     </div>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col gap-2">
                     <Button
-                      onClick={() => viewWorksheet(worksheet)}
+                      onClick={() => viewWorksheet(document)}
                       variant="outline"
                       size="sm"
                       className="w-full"
@@ -200,7 +154,7 @@ const HelpfulDocuments = () => {
                     </Button>
                     <div className="grid grid-cols-2 gap-2">
                       <Button
-                        onClick={() => downloadWorksheet(worksheet)}
+                        onClick={() => downloadWorksheet(document)}
                         variant="outline"
                         size="sm"
                       >
@@ -208,7 +162,7 @@ const HelpfulDocuments = () => {
                         Download
                       </Button>
                       <Button
-                        onClick={() => printWorksheet(worksheet)}
+                        onClick={() => printWorksheet(document)}
                         variant="outline"
                         size="sm"
                       >

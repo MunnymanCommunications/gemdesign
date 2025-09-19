@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { CreditCard, ExternalLink, Settings, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const StripeManager = () => {
   const [stripeConfigured, setStripeConfigured] = useState<boolean | null>(null);
@@ -16,9 +17,7 @@ const StripeManager = () => {
   const checkStripeStatus = async () => {
     setLoading(true);
     try {
-      // This would call the stripe-config-status function
-      // For now, we'll simulate checking
-      const { data, error } = await fetch('/api/stripe-status').then(r => r.json()).catch(() => ({ error: 'Not configured' }));
+      const { data, error } = await supabase.functions.invoke('stripe-config-status');
       setStripeConfigured(!error);
     } catch (error) {
       console.error('Error checking Stripe status:', error);
