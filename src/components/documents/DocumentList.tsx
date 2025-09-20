@@ -150,7 +150,7 @@ const DocumentList = ({ refresh }: DocumentListProps) => {
                     <p className="font-medium truncate">{document.filename}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge variant="secondary" className={getFileTypeColor(document.mime_type)}>
-                        {document.mime_type.split('/')[1]?.toUpperCase() || 'FILE'}
+                        {(document.mime_type.split('/')[1])?.toUpperCase() || 'FILE'}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
                         {formatFileSize(document.file_size)}
