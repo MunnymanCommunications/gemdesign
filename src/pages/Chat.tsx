@@ -178,7 +178,7 @@ const Chat = () => {
     // Add action context if one is selected
     if (activeAction) {
       const actionMap = {
-        'generate-proposal': 'Generate a professional proposal based on our conversation. Use my uploaded proposal templates for formatting and include relevant services from my pricing document. Make sure to include project timeline, deliverables, and pricing. If site images were uploaded during assessment, reference them in the proposal.',
+        'generate-proposal': 'Generate a professional proposal based on our conversation. Use my uploaded proposal templates for formatting and include relevant services from my pricing document. Make sure to include project timeline, deliverables, and pricing. If site images were uploaded during assessment, reference them in the proposal. Do not include any introductory phrases like "Here is the proposal".',
         'generate-invoice': 'Generate an invoice based on the services we discussed. Use my company information and pricing document to create an accurate invoice with the correct pricing and branding.'
       };
       userMessage = `${actionMap[activeAction as keyof typeof actionMap]} ${userMessage}`;
@@ -274,7 +274,7 @@ const Chat = () => {
 
       // Check if this is a document generation action and open editor
       if (activeAction === 'generate-proposal' || activeAction === 'generate-invoice') {
-        const companyInfo = await fetchCompanyInfo();
+        const currentConversationData = conversations.find(c => c.id === currentConversation);
         setGeneratedContent(aiResponse);
         setShowDocumentEditor(true);
       }
@@ -501,21 +501,20 @@ Please provide a comprehensive security camera system assessment based on this s
                     <div className="flex items-center gap-2">
                       <ClipboardList className="h-4 w-4" />
                       <Label htmlFor="mode-toggle" className="text-sm font-medium">
-                        7-Step Assessment
+                        Assessment
                       </Label>
                     </div>
                   </div>
                 </div>
               </CardHeader>
-              
               {currentConversation ? (
                 <>
                   <CardContent className="flex-1 p-0">
                     {isAssessmentMode ? (
                       <div className="h-[calc(100vh-16rem)] p-6 overflow-y-auto">
                         <AssessmentForm 
-                          onSubmit={handleAssessmentSubmit}
-                          isLoading={isLoading}
+                          onSubmit={handleAssessmentSubmit} 
+                          onCancel={() => setIsAssessmentMode(false)}
                         />
                       </div>
                     ) : (
@@ -524,49 +523,32 @@ Please provide a comprehensive security camera system assessment based on this s
                           {messages.map((message) => (
                             <div
                               key={message.id}
-                              className={`flex gap-3 ${
-                                message.role === 'user' ? 'justify-end' : 'justify-start'
+                              className={`flex items-start gap-3 ${
+                                message.role === 'user' ? 'justify-end' : ''
                               }`}
                             >
                               {message.role === 'assistant' && (
-                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                                  <Bot className="h-4 w-4 text-primary-foreground" />
-                                </div>
+                                <Bot className="h-6 w-6 text-blue-500" />
                               )}
                               <div
-                                className={`max-w-[80%] p-3 rounded-lg ${
+                                className={`max-w-lg rounded-lg p-3 ${
                                   message.role === 'user'
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-800'
                                 }`}
                               >
                                 <MessageFormatter content={message.content} />
-                                <p className="text-xs opacity-70 mt-2">
-                                  {new Date(message.created_at).toLocaleTimeString()}
-                                </p>
                               </div>
                               {message.role === 'user' && (
-                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                                  <User className="h-4 w-4 text-muted-foreground" />
-                                </div>
+                                <User className="h-6 w-6 text-gray-500" />
                               )}
                             </div>
                           ))}
-                          {(isLoading || streamingMessage) && (
-                            <div className="flex gap-3 justify-start">
-                              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                                <Bot className="h-4 w-4 text-primary-foreground" />
-                              </div>
-                              <div className="bg-muted p-3 rounded-lg max-w-[80%]">
-                                {streamingMessage ? (
-                                  <MessageFormatter content={streamingMessage} />
-                                ) : (
-                                  <div className="flex space-x-1">
-                                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                                  </div>
-                                )}
+                          {isLoading && streamingMessage && (
+                            <div className="flex items-start gap-3">
+                              <Bot className="h-6 w-6 text-blue-500" />
+                              <div className="max-w-lg rounded-lg p-3 bg-gray-100 dark:bg-gray-800">
+                                <MessageFormatter content={streamingMessage} />
                               </div>
                             </div>
                           )}
@@ -575,7 +557,6 @@ Please provide a comprehensive security camera system assessment based on this s
                       </ScrollArea>
                     )}
                   </CardContent>
-                  
                   {!isAssessmentMode && (
                     <div className="p-4 border-t space-y-4">
                       <QuickActions 
@@ -623,7 +604,7 @@ Please provide a comprehensive security camera system assessment based on this s
           onClose={() => setShowDocumentEditor(false)}
           documentType={activeAction === 'generate-proposal' ? 'proposal' : 'invoice'}
           aiGeneratedContent={generatedContent}
-          clientName="Client"
+          clientName={conversations.find(c => c.id === currentConversation)?.company_name}
           assessmentImages={lastAssessmentImages}
         />
       </div>
@@ -637,5 +618,3 @@ Please provide a comprehensive security camera system assessment based on this s
     </Layout>
   );
 };
-
-export default Chat;

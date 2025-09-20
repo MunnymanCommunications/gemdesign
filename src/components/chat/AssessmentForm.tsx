@@ -29,7 +29,8 @@ interface ClarificationDialog {
 
 interface AssessmentFormProps {
   onSubmit: (data: AssessmentData) => void;
-  isLoading: boolean;
+  isLoading?: boolean;
+  onCancel: () => void;
 }
 
 const ASSESSMENT_STEPS = [
@@ -78,7 +79,7 @@ const ASSESSMENT_STEPS = [
   }
 ];
 
-const AssessmentForm = ({ onSubmit, isLoading }: AssessmentFormProps) => {
+const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFormProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [assessmentData, setAssessmentData] = useState<AssessmentData>({
     step1: '',

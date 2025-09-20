@@ -39,27 +39,22 @@ const DocumentEditor = ({
   assessmentImages = []
 }: DocumentEditorProps) => {
   const { user } = useAuth();
-  const [editableContent, setEditableContent] = useState('');
   const [documentTitle, setDocumentTitle] = useState('');
   const [companyTemplate, setCompanyTemplate] = useState<CompanyTemplate | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      // Load company template from profile
       fetchCompanyTemplate();
 
-      // Ensure AI content is properly formatted and set
       if (aiGeneratedContent && aiGeneratedContent.trim()) {
-        // Clean up the AI content and format it properly
         let cleanContent = aiGeneratedContent
-          .replace(/^#{1,6}\s*/gm, '<h3>') // Convert markdown headers to h3
-          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold text
-          .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic text
-          .replace(/\n\n/g, '</p><p>') // Paragraphs
-          .replace(/\n/g, '<br>'); // Line breaks
+          .replace(/^#{1,6}\s*/gm, '<h3>')
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/\n\n/g, '</p><p>')
+          .replace(/\n/g, '<br>');
 
-        // Replace image placeholders with actual site images
         if (assessmentImages.length > 0) {
           assessmentImages.forEach((imageData, index) => {
             const placeholder = `[Site Image ${index + 1}]`;
@@ -71,19 +66,22 @@ const DocumentEditor = ({
           });
         }
         
-        // Wrap in paragraphs if not already wrapped
         if (!cleanContent.startsWith('<')) {
           cleanContent = '<p>' + cleanContent + '</p>';
         }
         
-        setEditableContent(cleanContent);
+        if (contentRef.current) {
+          contentRef.current.innerHTML = cleanContent;
+        }
       } else {
-        setEditableContent('<p>Please generate content first using the AI chat, then click on the highlighted Generate Proposal/Invoice button.</p>');
+        if (contentRef.current) {
+          contentRef.current.innerHTML = '<p>Please generate content first using the AI chat, then click on the highlighted Generate Proposal/Invoice button.</p>';
+        }
       }
       
       setDocumentTitle(`${documentType.charAt(0).toUpperCase() + documentType.slice(1)} for ${clientName}`);
     }
-  }, [isOpen, aiGeneratedContent, documentType, clientName]);
+  }, [isOpen, aiGeneratedContent, documentType, clientName, assessmentImages]);
 
   const fetchCompanyTemplate = async () => {
     try {
@@ -132,11 +130,20 @@ const DocumentEditor = ({
         </div>
         <div style="text-align: right;">
           <h2 style="font-size: 28px; font-weight: bold; color: #3b82f6; margin: 0; text-transform: uppercase;">
-            ${documentType === 'proposal' ? 'PROPOSAL' : 'INVOICE'}
+            PROPOSAL
           </h2>
           <p style="margin: 10px 0; color: #6b7280;">Date: ${new Date().toLocaleDateString()}</p>
           <p style="margin: 5px 0; color: #6b7280;">Doc #: ${documentType.toUpperCase()}-${Date.now().toString().slice(-6)}</p>
         </div>
+      </div>
+    `;
+  };
+
+  const generateClientInfo = () => {
+    return `
+      <div style="margin-bottom: 30px;">
+        <h3 style="font-size: 16px; font-weight: bold; color: #1f2937; margin: 0 0 10px 0;">Prepared for:</h3>
+        <p style="margin: 5px 0; color: #6b7280;">${clientName}</p>
       </div>
     `;
   };
@@ -152,15 +159,17 @@ const DocumentEditor = ({
     `;
   };
 
-  const getFullDocument = () => {
+  const getFullDocument = (content: string) => {
     const header = generateHeader();
+    const clientInfo = generateClientInfo();
     const footer = generateFooter();
     
     return `
       <div style="max-width: 800px; margin: 0 auto; padding: 40px; font-family: Arial, sans-serif; line-height: 1.6; color: #1f2937;">
         ${header}
+        ${clientInfo}
         <div style="margin: 30px 0;">
-          ${editableContent}
+          ${content}
         </div>
         ${footer}
       </div>
@@ -169,13 +178,14 @@ const DocumentEditor = ({
 
   const saveDocument = async () => {
     try {
+      const content = contentRef.current?.innerHTML || '';
       const documentData = {
         user_id: user?.id,
         document_type: documentType,
         title: documentTitle,
-        content: getFullDocument(),
+        content: getFullDocument(content),
         client_name: clientName,
-        amount: extractAmount(editableContent)
+        amount: extractAmount(content)
       };
 
       const { error } = await supabase
@@ -196,7 +206,8 @@ const DocumentEditor = ({
     try {
       // Create a temporary element for PDF generation
       const element = document.createElement('div');
-      element.innerHTML = getFullDocument();
+      const content = contentRef.current?.innerHTML || '';
+      element.innerHTML = getFullDocument(content);
       element.style.width = '800px';
       element.style.padding = '40px';
       element.style.fontFamily = 'Arial, sans-serif';
@@ -258,13 +269,6 @@ const DocumentEditor = ({
     return 0;
   };
 
-  const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
-    const sanitizedContent = DOMPurify.sanitize(e.currentTarget.innerHTML, {
-      ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'em', 'u', 'ol', 'ul', 'li', 'img', 'div'],
-      ALLOWED_ATTR: ['src', 'alt', 'style', 'class']
-    });
-    setEditableContent(sanitizedContent);
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -303,15 +307,8 @@ const DocumentEditor = ({
             <div 
               ref={contentRef}
               contentEditable
-              onInput={handleContentChange}
               className="p-6 min-h-[300px] focus:outline-none focus:ring-2 focus:ring-blue-500 prose max-w-none"
-              dangerouslySetInnerHTML={{ 
-                __html: DOMPurify.sanitize(editableContent, {
-                  ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'em', 'u', 'ol', 'ul', 'li', 'img', 'div'],
-                  ALLOWED_ATTR: ['src', 'alt', 'style', 'class']
-                })
-              }}
-              style={{ 
+              style={{
                 lineHeight: '1.6',
                 fontFamily: 'Arial, sans-serif'
               }}
