@@ -20,7 +20,7 @@ import {
   Camera
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useRoles } from '@/hooks/useRoles';
+import { useRoles } from '@/hooks/useRoles.tsx';
 
 const Navigation = () => {
   const { user, signOut } = useAuth();
