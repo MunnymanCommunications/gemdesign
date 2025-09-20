@@ -274,7 +274,7 @@ const GlobalAIDocumentUpload = () => {
                       <p className="font-medium">{doc.filename}</p>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Badge className={getFileTypeColor(doc.mime_type)}>
-                          {doc.mime_type.split('/')?.toUpperCase()}
+                          {(doc.mime_type.split('/')[1])?.toUpperCase()}
                         </Badge>
                         <span>{formatFileSize(doc.file_size)}</span>
                         <span>•</span>
