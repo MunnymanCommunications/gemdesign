@@ -618,3 +618,5 @@ Please provide a comprehensive security camera system assessment based on this s
     </Layout>
   );
 };
+
+export default Chat;
