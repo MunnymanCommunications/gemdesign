@@ -93,8 +93,9 @@ const StripeManager = () => {
               </button>
             </li>
             <li>Add it as "STRIPE_SECRET_KEY" in Supabase Edge Function secrets</li>
-            <li>Create your subscription products and price IDs in Stripe</li>
-            <li>Update the price IDs in the admin settings above</li>
+            <li>Create your subscription products in Stripe</li>
+            <li>For each product, create a Price and copy the **Price ID** (it starts with `price_...`)</li>
+            <li>Paste the Price IDs into the "Billing Configuration" section under the "Settings" tab</li>
             <li>Test the integration with Stripe's test mode</li>
           </ol>
         </div>

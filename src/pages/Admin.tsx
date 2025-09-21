@@ -51,7 +51,7 @@ const [apiKey, setApiKey] = useState('');
 const [platformApiKey, setPlatformApiKey] = useState('');
 const [stripeConfigured, setStripeConfigured] = useState<boolean | null>(null);
 const [customModel, setCustomModel] = useState('');
-const { isAdmin, loading: rolesLoading } = useRoles();
+const { isAdmin } = useRoles();
 
 useEffect(() => {
   fetchSettings();
@@ -186,17 +186,6 @@ You can reference uploaded documents to help with business tasks, generate invoi
     }
   };
 
-  if (rolesLoading) {
-    return (
-      <Layout>
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center py-8">
-            <h2 className="text-2xl font-semibold mb-2">Loading Permissions...</h2>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
 
   if (!isAdmin) {
     return (
@@ -498,83 +487,75 @@ You can reference uploaded documents to help with business tasks, generate invoi
             </CardContent>
           </Card>
 
-          {/* Global Prompt */}
+          {/* Billing Configuration */}
           <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Billing Configuration
+              </CardTitle>
+              <CardDescription>
+                Set Stripe Price IDs for your subscription plans
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="stripeBase">Base Tier Stripe Price ID</Label>
+                <Input
+                  id="stripeBase"
+                  value={settings.stripe_price_id_base || ''}
+                  onChange={(e) => setSettings(prev => prev ? { ...prev, stripe_price_id_base: e.target.value } : null)}
+                  placeholder="price_..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="stripePro">Pro Tier Stripe Price ID</Label>
+                <Input
+                  id="stripePro"
+                  value={settings.stripe_price_id_pro || ''}
+                  onChange={(e) => setSettings(prev => prev ? { ...prev, stripe_price_id_pro: e.target.value } : null)}
+                  placeholder="price_..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="stripeEnt">Enterprise Tier Stripe Price ID</Label>
+                <Input
+                  id="stripeEnt"
+                  value={settings.stripe_price_id_enterprise || ''}
+                  onChange={(e) => setSettings(prev => prev ? { ...prev, stripe_price_id_enterprise: e.target.value } : null)}
+                  placeholder="price_..."
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Global Prompt */}
+          <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
                 Global AI Prompt
               </CardTitle>
               <CardDescription>
-                Configure the global prompt that provides context to the AI assistant
+                This prompt is used as a base for all AI interactions
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="globalPrompt">Global AI Prompt</Label>
-                <Textarea
-                  id="globalPrompt"
-                  value={settings.global_prompt}
-                  onChange={(e) => setSettings(prev => prev ? { ...prev, global_prompt: e.target.value } : null)}
-                  rows={6}
-                  placeholder="Enter the global prompt for the AI assistant..."
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Use template variables: {'{'}company{'}'}, {'{'}full_name{'}'}, {'{'}email{'}'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Payment & Access Control */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5" />
-                Access Control
-              </CardTitle>
-              <CardDescription>
-                Configure payment requirements and trial access
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label htmlFor="paymentRequired">Payment Required</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Require payment to access portal features. When disabled, users can try features without payment.
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  id="paymentRequired"
-                  checked={settings.payment_required}
-                  onChange={(e) => setSettings(prev => prev ? { ...prev, payment_required: e.target.checked } : null)}
-                  className="h-4 w-4"
-                />
-              </div>
-              
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm">
-                  {settings.payment_required 
-                    ? "🔒 Payment Required: Users must pay to access Base and Pro features"
-                    : "🆓 Trial Mode: Users can try Base and Pro features without payment"
-                  }
-                </p>
-              </div>
+            <CardContent>
+              <Textarea
+                value={settings.global_prompt}
+                onChange={(e) => setSettings(prev => prev ? { ...prev, global_prompt: e.target.value } : null)}
+                rows={12}
+              />
             </CardContent>
           </Card>
         </div>
-        <UsageLimitsManager />
 
-            {/* Save Button */}
-            <div className="flex justify-end">
-              <Button onClick={updateSettings} disabled={saving} size="lg">
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? 'Saving...' : 'Save Settings'}
-              </Button>
-            </div>
-
+        <div className="flex justify-end">
+          <Button onClick={updateSettings} disabled={saving} size="lg">
+            <Save className="h-4 w-4 mr-2" />
+            {saving ? 'Saving...' : 'Save All Settings'}
+          </Button>
+        </div>
           </TabsContent>
 
           <TabsContent value="users">
@@ -590,9 +571,9 @@ You can reference uploaded documents to help with business tasks, generate invoi
           </TabsContent>
 
           <TabsContent value="documents">
-            <div className="space-y-6">
-              <GlobalAIDocumentUpload />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <HelpfulDocumentUpload />
+              <GlobalAIDocumentUpload />
             </div>
           </TabsContent>
         </Tabs>
@@ -600,5 +581,3 @@ You can reference uploaded documents to help with business tasks, generate invoi
     </Layout>
   );
 };
-
-export default Admin;
