@@ -581,3 +581,5 @@ You can reference uploaded documents to help with business tasks, generate invoi
     </Layout>
   );
 };
+
+export default Admin;
