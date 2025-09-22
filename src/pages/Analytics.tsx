@@ -123,7 +123,7 @@ const Analytics = () => {
   return (
     <Layout>
       <SEO
-        title="Analytics Dashboard — DesignR AI"
+        title="Analytics Dashboard — Design Rite AI"
         description="Track conversations, documents, and usage metrics."
         canonical="/analytics"
       />

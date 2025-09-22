@@ -443,7 +443,7 @@ Please provide a comprehensive security camera system assessment based on this s
   return (
     <Layout>
       <SEO
-        title="AI Assistant Chat — DesignR AI"
+        title="AI Assistant Chat — Design Rite AI"
         description="Chat with your AI assistant for proposals, invoices, and analysis."
         canonical="/chat"
       />

@@ -165,7 +165,7 @@ const Profile = () => {
   return (
     <Layout>
       <SEO
-        title="Profile Settings — DesignR AI"
+        title="Profile Settings — Design Rite AI"
         description="Manage your account, company, and preferences."
         canonical="/profile"
       />

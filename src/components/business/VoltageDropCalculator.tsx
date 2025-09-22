@@ -474,7 +474,7 @@ RESPONSE FORMAT:
               className="w-fit"
             >
               <History className="h-4 w-4 mr-2" />
-              Pull Last DesignR AI Conversation
+              Pull Last Design Rite AI Conversation
             </Button>
           </CardHeader>
           <CardContent>

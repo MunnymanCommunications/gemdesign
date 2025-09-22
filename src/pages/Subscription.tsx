@@ -188,7 +188,7 @@ const Subscription = () => {
   return (
     <Layout>
       <SEO
-        title="Subscription Plans — DesignR AI"
+        title="Subscription Plans — Design Rite AI"
         description="Compare Base and Pro plans and manage your subscription."
         canonical="/subscription"
       />

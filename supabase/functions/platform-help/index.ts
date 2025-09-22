@@ -48,7 +48,7 @@ serve(async (req) => {
     }
 
     // Default platform help prompt
-    const defaultPrompt = `You are a helpful platform assistant for DesignR AI Platform. Help users navigate and understand the platform features:
+    const defaultPrompt = `You are a helpful platform assistant for Design Rite AI Platform. Help users navigate and understand the platform features:
 
 **Navigation Guide:**
 - **Chat**: Main AI chat interface for business assistance and document analysis

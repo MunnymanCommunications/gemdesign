@@ -22,7 +22,7 @@ const GetStarted = () => {
 
   // SEO: title, description, canonical
   useEffect(() => {
-    const title = 'Get Started – Plans & Access | DesignR AI';
+    const title = 'Get Started – Plans & Access | Design Rite AI';
     document.title = title;
 
     const metaDescContent = 'Choose Basic/Pro or use an invite for Enterprise or Master Admin access.';

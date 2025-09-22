@@ -89,7 +89,7 @@ const Documents = () => {
   return (
     <Layout>
       <SEO
-        title="Document Management — DesignR AI"
+        title="Document Management — Design Rite AI"
         description="Upload, manage, and process documents for AI-powered workflows."
         canonical="/documents"
       />

@@ -13,7 +13,7 @@ interface Message {
   timestamp: Date;
 }
 
-const PLATFORM_INSTRUCTIONS = `You are a helpful platform assistant for DesignR AI Platform. Help users navigate and understand the platform features:
+const PLATFORM_INSTRUCTIONS = `You are a helpful platform assistant for Design Rite AI Platform. Help users navigate and understand the platform features:
 
 **Navigation Guide:**
 - **Chat**: Main AI chat interface for business assistance and document analysis
@@ -44,7 +44,7 @@ const PlatformHelpBubble = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Hi! I\'m here to help you navigate the DesignR AI Platform. Ask me about features, navigation, or how to get started!',
+      content: 'Hi! I\'m here to help you navigate the Design Rite AI Platform. Ask me about features, navigation, or how to get started!',
       role: 'assistant',
       timestamp: new Date()
     }

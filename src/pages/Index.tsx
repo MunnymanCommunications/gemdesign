@@ -34,14 +34,14 @@ const Index = () => {
   return (
     <Layout>
       <SEO
-        title="DesignR AI Dashboard — Business Assistant"
-        description="Manage chat, documents, analytics, and tools with DesignR AI."
+        title="Design Rite AI Dashboard — Business Assistant"
+        description="Manage chat, documents, analytics, and tools with Design Rite AI."
         canonical="/"
       />
       <div className="max-w-6xl mx-auto">
         <header className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            DesignR AI Platform
+            Design Rite AI Platform
           </h1>
           <p className="text-muted-foreground mt-2">Welcome back, {user.email}</p>
         </header>

@@ -106,7 +106,7 @@ useEffect(() => {
         .insert({
           ai_model: 'gpt-4o-mini',
           chat_completions_url: 'https://api.openai.com/v1/chat/completions',
-          global_prompt: `You are a helpful AI assistant for DesignR AI Platform. You have access to the following user information:
+          global_prompt: `You are a helpful AI assistant for Design Rite AI Platform. You have access to the following user information:
 
 - Company: {{company}}
 - Name: {{full_name}}
@@ -228,7 +228,7 @@ You can reference uploaded documents to help with business tasks, generate invoi
   return (
     <Layout>
       <SEO
-        title="Admin Settings — DesignR AI"
+        title="Admin Settings — Design Rite AI"
         description="Configure AI, limits, billing, and global assets."
         canonical="/admin"
       />

@@ -15,7 +15,7 @@ const NotFound = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <SEO
-        title="404 — Page Not Found | DesignR AI"
+        title="404 — Page Not Found | Design Rite AI"
         description="The page you’re looking for doesn’t exist. Return home."
         canonical="/404"
       />

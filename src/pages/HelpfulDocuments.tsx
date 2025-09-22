@@ -98,7 +98,7 @@ const HelpfulDocuments = () => {
   return (
     <Layout>
       <SEO
-        title="Helpful Documents — DesignR AI"
+        title="Helpful Documents — Design Rite AI"
         description="Access helpful documents and resources provided by administrators."
         canonical="/helpful-documents"
       />

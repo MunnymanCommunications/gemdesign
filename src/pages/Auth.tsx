@@ -86,8 +86,9 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          <img src="/logo.png" alt="Design Rite Ai" className="h-12 mx-auto" />
           <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Welcome to DesignR
+            Welcome to Design Rite
           </CardTitle>
           <CardDescription>
             Your AI-powered business application platform
