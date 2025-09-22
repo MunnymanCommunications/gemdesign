@@ -210,31 +210,7 @@ const SatelliteAssessmentPage: React.FC = () => {
     setError('');
     try {
       const reportTitle = assessmentMode === 'exterior' ? location : 'Interior Security Plan';
-      const pdfBlob = await generatePdfReport(aerialViewRef.current, securityAnalysis, reportTitle);
-
-      if (user && pdfBlob) {
-        const fileName = `${user.id}/${reportTitle.replace(/ /g, '_')}_${new Date().getTime()}.pdf`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('generated_documents')
-          .upload(fileName, pdfBlob, { upsert: true });
-
-        if (uploadError) {
-          throw new Error('Failed to upload report');
-        }
-
-        const { data: urlData } = supabase.storage
-          .from('generated_documents')
-          .getPublicUrl(uploadData.path);
-
-        const { error: updateError } = await supabase
-          .from('generated_documents')
-          .update({ file_path: urlData.publicUrl })
-          .eq('content', JSON.stringify(securityAnalysis));
-
-        if (updateError) {
-          console.error('Error updating file path:', updateError);
-        }
-      }
+      await generatePdfReport(aerialViewRef.current, securityAnalysis, reportTitle);
     } catch (err) {
        console.error("Failed to generate PDF:", err);
        const errorMessage = err instanceof Error ? `Failed to generate PDF: ${err.message}` : 'An unknown error occurred during PDF generation.';
@@ -441,7 +417,8 @@ const SatelliteAssessmentPage: React.FC = () => {
 
               {isLoading && (
                 <div className="text-center text-indigo-300 p-4">
-                  <p>{getLoadingMessage()}</p>
+                  <LoadingSpinner />
+                  <p className="mt-4">{getLoadingMessage()}</p>
                 </div>
               )}
               

@@ -13,6 +13,10 @@ export const generatePdfReport = async (
   reportTitle: string
 ) => {
   // Use html2canvas to capture the aerial view with markers
+  const markerElement = elementToCapture.querySelector('.marker') as HTMLElement;
+  const markerX = markerElement ? markerElement.offsetLeft : 0;
+  const markerY = markerElement ? markerElement.offsetTop : 0;
+
   const canvas = await html2canvas(elementToCapture, {
     useCORS: true, // Important for external images like Google Maps
     scale: 2, // Increase resolution
@@ -41,6 +45,13 @@ export const generatePdfReport = async (
   const imgProps = pdf.getImageProperties(imgData);
   const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
   pdf.addImage(imgData, 'PNG', MARGIN, yPosition, contentWidth, imgHeight);
+
+  if (markerElement) {
+    const pdfMarkerX = (markerX / elementToCapture.offsetWidth) * contentWidth + MARGIN;
+    const pdfMarkerY = (markerY / elementToCapture.offsetHeight) * imgHeight + yPosition;
+    pdf.setFillColor(255, 0, 0);
+    pdf.circle(pdfMarkerX, pdfMarkerY, 2, 'F');
+  }
   yPosition += imgHeight + 15;
 
   // Helper function to check for page overflow and add a new page if needed
@@ -131,36 +142,38 @@ export const generatePdfReport = async (
   // Sanitize address for filename
   const pdfBlob = pdf.output('blob');
   
-  // 1. Local save
-  const localUrl = URL.createObjectURL(pdfBlob);
-  const a = document.createElement('a');
-  a.href = localUrl;
-  a.download = `${reportTitle.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-  a.click();
-
-  // 2. Supabase upload
   try {
     const session = await supabase.auth.getSession();
     const userId = session.data.session?.user.id;
     if (!userId) throw new Error('User not authenticated');
     
-    const filePath = `${userId}/${Date.now()}.pdf`;
-    const { error: uploadError } = await supabase.storage
-      .from('security-reports')
-      .upload(filePath, pdfBlob);
+    const fileName = `${userId}/${reportTitle.replace(/ /g, '_')}_${new Date().getTime()}.pdf`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('generated_documents')
+      .upload(fileName, pdfBlob, { upsert: true });
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      throw new Error('Failed to upload report');
+    }
 
-    // 3. Save metadata
+    const { data: urlData } = supabase.storage
+      .from('generated_documents')
+      .getPublicUrl(uploadData.path);
+
     const { error: dbError } = await supabase
-      .from('security_reports')
+      .from('generated_documents')
       .insert({
         user_id: userId,
-        company_name: reportTitle,
-        file_path: filePath
+        document_type: 'Satellite Security Assessment',
+        title: reportTitle,
+        content: JSON.stringify(analysis),
+        client_name: session.data.session?.user.email || 'Unknown',
+        file_path: urlData.publicUrl,
       });
 
-    if (dbError) throw dbError;
+    if (dbError) {
+      throw new Error('Failed to save report metadata');
+    }
 
     return { success: true, blob: pdfBlob };
   } catch (error) {
