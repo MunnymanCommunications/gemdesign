@@ -15,8 +15,8 @@ import { toast } from 'sonner';
 interface AdminSettings {
   max_base_documents: number;
   max_pro_documents: number;
-  stripe_base_price_id: string | null;
-  stripe_pro_price_id: string | null;
+  stripe_price_id_base: string | null;
+  stripe_price_id_pro: string | null;
 }
 
 const Subscription = () => {
@@ -52,7 +52,7 @@ const Subscription = () => {
     try {
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('max_base_documents, max_pro_documents, stripe_base_price_id, stripe_pro_price_id')
+        .select('max_base_documents, max_pro_documents, stripe_price_id_base, stripe_price_id_pro')
         .limit(1)
         .single();
       if (error) throw error;
@@ -102,7 +102,7 @@ const Subscription = () => {
       name: 'Base',
       price: '$49.95/month',
       tier: 'base',
-      priceId: adminSettings?.stripe_base_price_id || null,
+      priceId: adminSettings?.stripe_price_id_base || null,
       description: 'Perfect for getting started',
       icon: Star,
       features: [`${adminSettings?.max_base_documents || 5} Document Uploads`, 'Basic AI Assistant', 'Invoice Generator', 'Email Support'],
@@ -112,7 +112,7 @@ const Subscription = () => {
       name: 'Pro',
       price: '$99.95/month',
       tier: 'pro',
-      priceId: adminSettings?.stripe_pro_price_id || null,
+      priceId: adminSettings?.stripe_price_id_pro || null,
       description: 'For growing businesses',
       icon: Crown,
       popular: true,
