@@ -8,7 +8,9 @@ interface Subscription {
   max_documents: number;
   created_at: string;
   updated_at: string;
-  payment_status: string;
+  status: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
 }
 
 export const useSubscription = () => {
@@ -41,7 +43,9 @@ export const useSubscription = () => {
             max_documents: 999,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            payment_status: 'active',
+            status: 'active',
+            stripe_customer_id: null,
+            stripe_subscription_id: null,
           });
           setLoading(false);
           return;
@@ -52,6 +56,7 @@ export const useSubscription = () => {
           .from('user_subscriptions')
           .select('*')
           .eq('user_id', user.id)
+          .in('status', ['trialing', 'active'])
           .maybeSingle();
 
         if (error) {
@@ -60,7 +65,24 @@ export const useSubscription = () => {
         } else if (data) {
           setSubscription(data);
         } else {
-          setSubscription(null); // No subscription, user should be prompted to pay
+          // No active subscription, create a free one
+          const { data: freeSub, error: createError } = await supabase
+            .from('user_subscriptions')
+            .insert({
+              user_id: user.id,
+              tier: 'free',
+              max_documents: 2,
+              status: 'active',
+            })
+            .select('*')
+            .single();
+
+          if (createError) {
+            setError(createError.message);
+            setSubscription(null);
+          } else {
+            setSubscription(freeSub);
+          }
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');

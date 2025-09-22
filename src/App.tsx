@@ -24,7 +24,6 @@ import HelpfulDocuments from './pages/HelpfulDocuments';
 import BrowserPDFExtractorPage from './pages/BrowserPDFExtractorPage';
 import SatelliteAssessmentPage from './pages/SatelliteAssessment';
 import UpgradePage from './pages/Upgrade';
-import SubscriptionEnforcer from './components/SubscriptionEnforcer';
 import PaymentFailedModal from './components/PaymentFailedModal';
 import { useSubscription } from './hooks/useSubscription';
 import PrivateRoute from './components/PrivateRoute';
@@ -33,16 +32,15 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { subscription } = useSubscription();
-  const showPaymentFailedModal = subscription?.payment_status === 'past_due';
+  const showPaymentFailedModal = subscription?.status === 'past_due';
 
   return (
     <>
       <PaymentFailedModal open={showPaymentFailedModal} />
       <BrowserRouter>
-        <SubscriptionEnforcer>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/upgrade" element={<UpgradePage />} />
 
@@ -65,8 +63,7 @@ const AppContent = () => {
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </SubscriptionEnforcer>
+        </Routes>
       </BrowserRouter>
     </>
   );

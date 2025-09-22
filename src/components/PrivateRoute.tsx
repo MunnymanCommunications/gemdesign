@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 
 const PrivateRoute = () => {
   const { subscription } = useSubscription();
-  const hasActiveSubscription = subscription && subscription.payment_status !== 'past_due';
+  const hasActiveSubscription = subscription && subscription.status === 'active';
 
   return hasActiveSubscription ? <Outlet /> : <Navigate to="/subscription" replace />;
 };

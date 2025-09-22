@@ -31,6 +31,8 @@ interface AdminSettings {
   max_base_documents: number;
   max_pro_documents: number;
   max_enterprise_documents: number;
+  stripe_base_price_id: string;
+  stripe_pro_price_id: string;
 }
 
 const Subscription = () => {
@@ -83,7 +85,7 @@ const Subscription = () => {
     try {
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('max_base_documents, max_pro_documents, max_enterprise_documents')
+        .select('max_base_documents, max_pro_documents, max_enterprise_documents, stripe_base_price_id, stripe_pro_price_id')
         .limit(1)
         .single();
 
@@ -94,27 +96,44 @@ const Subscription = () => {
     }
   };
 
-  const upgradeSubscription = async (newTier: string) => {
+  const handleCheckout = async (priceId: string) => {
+    if (!user) return;
+
     try {
-      const { error } = await supabase
-        .from('user_subscriptions')
-        .update({ tier: newTier })
-        .eq('user_id', user?.id);
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: { priceId, userId: user.id },
+      });
 
       if (error) throw error;
-      
-      // Refresh subscription data
-      fetchSubscription();
+
+      window.location.href = data.url;
     } catch (error) {
-      console.error('Error upgrading subscription:', error);
+      console.error('Error creating checkout session:', error);
     }
   };
 
   const plans = [
     {
+      name: 'Free',
+      price: '$0/month',
+      tier: 'free',
+      description: 'For personal use and exploration',
+      icon: Star,
+      color: 'border-gray-200',
+      features: [
+        `2 Document Uploads`,
+        'Basic AI Assistant',
+        'Limited Tool Access',
+      ],
+      limitations: [
+        'No priority support',
+      ]
+    },
+    {
       name: 'Base',
       price: '$49.95/month',
       tier: 'base',
+      priceId: adminSettings?.stripe_base_price_id,
       description: 'Perfect for getting started',
       icon: Star,
       color: 'border-gray-200',
@@ -135,6 +154,7 @@ const Subscription = () => {
       name: 'Pro',
       price: '$99.95/month',
       tier: 'pro',
+      priceId: adminSettings?.stripe_pro_price_id,
       description: 'For growing businesses',
       icon: Crown,
       color: 'border-primary',
@@ -304,11 +324,12 @@ const Subscription = () => {
                     className="w-full"
                     variant={isCurrentPlan ? 'secondary' : plan.popular ? 'default' : 'outline'}
                     disabled={isCurrentPlan}
-                    onClick={() => !isCurrentPlan && upgradeSubscription(plan.tier)}
+                    onClick={() => !isCurrentPlan && plan.priceId && handleCheckout(plan.priceId)}
                   >
-                    {isCurrentPlan ? 'Current Plan' : 
-                     plan.tier === 'enterprise' ? 'Contact Sales' : 
-                     subscription?.tier === 'base' ? 'Upgrade' : 'Switch Plan'}
+                    {isCurrentPlan ? 'Current Plan' :
+                     plan.tier === 'enterprise' ? 'Contact Sales' :
+                     plan.tier === 'free' ? 'Your Current Plan' :
+                     subscription?.tier === 'free' ? 'Upgrade' : 'Switch Plan'}
                   </Button>
                 </CardContent>
               </Card>
