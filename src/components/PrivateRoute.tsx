@@ -1,12 +1,11 @@
 import { useSubscription } from '@/hooks/useSubscription';
 import { Navigate, Outlet } from 'react-router-dom';
 
-const ProRoute = () => {
+const PrivateRoute = () => {
   const { subscription } = useSubscription();
-  const isPro = subscription?.tier === 'pro';
   const hasActiveSubscription = subscription && subscription.payment_status !== 'past_due';
 
-  return isPro && hasActiveSubscription ? <Outlet /> : <Navigate to="/upgrade" replace />;
+  return hasActiveSubscription ? <Outlet /> : <Navigate to="/subscription" replace />;
 };
 
-export default ProRoute;
+export default PrivateRoute;

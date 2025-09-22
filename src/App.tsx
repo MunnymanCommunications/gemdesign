@@ -24,8 +24,53 @@ import HelpfulDocuments from './pages/HelpfulDocuments';
 import BrowserPDFExtractorPage from './pages/BrowserPDFExtractorPage';
 import SatelliteAssessmentPage from './pages/SatelliteAssessment';
 import UpgradePage from './pages/Upgrade';
+import SubscriptionEnforcer from './components/SubscriptionEnforcer';
+import PaymentFailedModal from './components/PaymentFailedModal';
+import { useSubscription } from './hooks/useSubscription';
+import PrivateRoute from './components/PrivateRoute';
 
 const queryClient = new QueryClient();
+
+const AppContent = () => {
+  const { subscription } = useSubscription();
+  const showPaymentFailedModal = subscription?.payment_status === 'past_due';
+
+  return (
+    <>
+      <PaymentFailedModal open={showPaymentFailedModal} />
+      <BrowserRouter>
+        <SubscriptionEnforcer>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/subscription" element={<Subscription />} />
+            <Route path="/upgrade" element={<UpgradePage />} />
+
+            <Route element={<PrivateRoute />}>
+              <Route path="/chat" element={<Chat />} />
+              <Route path="/documents" element={<Documents />} />
+              <Route path="/pdf-extractor" element={<BrowserPDFExtractorPage />} />
+              <Route path="/business-tools" element={<BusinessTools />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/theme" element={<Theme />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/get-started" element={<GetStarted />} />
+              <Route path="/helpful-documents" element={<HelpfulDocuments />} />
+              <Route path="/satellite-assessment" element={<SatelliteAssessmentPage />} />
+              <Route path="/security-assessment" element={<ProRoute />}>
+                <Route index element={<SecurityAssessmentPage />} />
+              </Route>
+            </Route>
+
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </SubscriptionEnforcer>
+      </BrowserRouter>
+    </>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -40,30 +85,7 @@ const App = () => (
           <ThemeProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/chat" element={<Chat />} />
-                <Route path="/documents" element={<Documents />} />
-                <Route path="/pdf-extractor" element={<BrowserPDFExtractorPage />} />
-                <Route path="/business-tools" element={<BusinessTools />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/theme" element={<Theme />} />
-                <Route path="/subscription" element={<Subscription />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/get-started" element={<GetStarted />} />
-                <Route path="/helpful-documents" element={<HelpfulDocuments />} />
-                <Route path="/satellite-assessment" element={<SatelliteAssessmentPage />} />
-                <Route path="/upgrade" element={<UpgradePage />} />
-                <Route path="/security-assessment" element={<ProRoute />}>
-                  <Route index element={<SecurityAssessmentPage />} />
-                </Route>
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
+            <AppContent />
           </ThemeProvider>
         </NextThemesProvider>
       </AuthProvider>

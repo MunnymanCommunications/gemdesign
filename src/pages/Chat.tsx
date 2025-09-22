@@ -64,6 +64,7 @@ const Chat = () => {
   const [isAssessmentMode, setIsAssessmentMode] = useState(false);
   const [lastAssessmentImages, setLastAssessmentImages] = useState<string[]>([]);
   const [showCompanyForm, setShowCompanyForm] = useState(false);
+  const [documentType, setDocumentType] = useState('Proposal');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -182,7 +183,6 @@ const Chat = () => {
         'generate-invoice': 'Generate an invoice based on the services we discussed. Use my company information and pricing document to create an accurate invoice with the correct pricing and branding.'
       };
       userMessage = `${actionMap[activeAction as keyof typeof actionMap]} ${userMessage}`;
-      setActiveAction(null); // Clear the action after sending
     }
     
     setInputMessage('');
@@ -277,6 +277,11 @@ const Chat = () => {
         const currentConversationData = conversations.find(c => c.id === currentConversation);
         setGeneratedContent(aiResponse);
         setShowDocumentEditor(true);
+        // Set the document type based on the active action
+        const documentType = activeAction === 'generate-proposal' ? 'Proposal' : 'Invoice';
+        // Pass the document type to the DocumentEditor component
+        setDocumentType(documentType);
+        setActiveAction(null);
       }
 
       // Update conversation title if it's the first message
@@ -602,7 +607,7 @@ Please provide a comprehensive security camera system assessment based on this s
         <DocumentEditor
           isOpen={showDocumentEditor}
           onClose={() => setShowDocumentEditor(false)}
-          documentType={activeAction === 'generate-proposal' ? 'proposal' : 'invoice'}
+          documentType={documentType.toLowerCase() as 'proposal' | 'invoice'}
           aiGeneratedContent={generatedContent}
           clientName={conversations.find(c => c.id === currentConversation)?.company_name}
           assessmentImages={lastAssessmentImages}

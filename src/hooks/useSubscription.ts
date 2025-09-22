@@ -8,6 +8,7 @@ interface Subscription {
   max_documents: number;
   created_at: string;
   updated_at: string;
+  payment_status: string;
 }
 
 export const useSubscription = () => {
@@ -26,6 +27,27 @@ export const useSubscription = () => {
 
       setLoading(true);
       try {
+        // Check for free access first
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('has_free_access')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.has_free_access) {
+          setSubscription({
+            id: 'free-access',
+            tier: 'pro',
+            max_documents: 999,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            payment_status: 'active',
+          });
+          setLoading(false);
+          return;
+        }
+
+        // If no free access, check for a real subscription
         const { data, error } = await supabase
           .from('user_subscriptions')
           .select('*')
@@ -38,23 +60,7 @@ export const useSubscription = () => {
         } else if (data) {
           setSubscription(data);
         } else {
-          // No subscription found, create base subscription
-          const { data: newSub, error: createError } = await supabase
-            .from('user_subscriptions')
-            .insert({
-              user_id: user.id,
-              tier: 'base',
-              max_documents: 1
-            })
-            .select('*')
-            .single();
-
-          if (createError) {
-            setError(createError.message);
-            setSubscription(null);
-          } else {
-            setSubscription(newSub);
-          }
+          setSubscription(null); // No subscription, user should be prompted to pay
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');

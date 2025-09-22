@@ -12,6 +12,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { User, Mail, Building, Save, Key, Shield } from 'lucide-react';
+import { useRoles } from '@/hooks/useRoles';
+import { Switch } from '@/components/ui/switch';
 
 interface Profile {
   id: string;
@@ -28,10 +30,12 @@ interface Profile {
   tax_id: string;
   created_at: string;
   updated_at: string;
+  has_free_access: boolean;
 }
 
 const Profile = () => {
   const { user } = useAuth();
+  const { isAdmin } = useRoles();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -125,6 +129,28 @@ const Profile = () => {
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleFreeAccess = async () => {
+    if (!profile) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ has_free_access: !profile.has_free_access })
+        .eq('id', user?.id);
+
+      if (error) throw error;
+      
+      setProfile(prev => prev ? { ...prev, has_free_access: !prev.has_free_access } : null);
+      toast.success('Free access status updated');
+    } catch (error) {
+      console.error('Error toggling free access:', error);
+      toast.error('Failed to update free access status');
     } finally {
       setSaving(false);
     }
@@ -476,6 +502,32 @@ const Profile = () => {
             </div>
           </CardContent>
         </Card>
+
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Admin Settings</CardTitle>
+              <CardDescription>
+                Manage user access and permissions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium">Free Access</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Grant this user free access to the platform
+                  </p>
+                </div>
+                <Switch
+                  checked={profile.has_free_access}
+                  onCheckedChange={toggleFreeAccess}
+                  disabled={saving}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </Layout>
   );

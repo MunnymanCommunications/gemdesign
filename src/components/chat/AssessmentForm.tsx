@@ -1,4 +1,6 @@
 import { useState, useRef } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Upload, MessageCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import SatelliteAssessmentModal from './SatelliteAssessmentModal';
+import { SecurityAnalysis } from '@/pages/SatelliteAssessment/types';
 
 interface AssessmentData {
   step1: string; // Project driver
@@ -19,6 +23,7 @@ interface AssessmentData {
   step6Images: File[]; // Site images
   step7: string; // Roadmap confirmation
   additionalNotes: string;
+  satelliteAnalysis?: any;
 }
 
 interface ClarificationDialog {
@@ -99,6 +104,8 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
   });
   const [clarificationResponse, setClarificationResponse] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSatelliteModalOpen, setIsSatelliteModalOpen] = useState(false);
+  const { user } = useAuth();
 
   const progress = ((currentStep + 1) / ASSESSMENT_STEPS.length) * 100;
   const isLastStep = currentStep === ASSESSMENT_STEPS.length - 1;
@@ -132,6 +139,51 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
     }));
   };
 
+  const handleSatelliteAssessmentComplete = async (analysis: SecurityAnalysis) => {
+    setAssessmentData(prev => ({ ...prev, satelliteAnalysis: analysis }));
+    setIsSatelliteModalOpen(false);
+    toast.success('Satellite analysis added to assessment');
+
+    if (user) {
+      await supabase.from('assessment_usage').insert({
+        user_id: user.id,
+        tool_name: 'satellite_assessment',
+      });
+    }
+  };
+
+  const handleLaunchSatelliteAssessment = async () => {
+    if (!user) {
+      toast.error('You must be logged in to use this feature.');
+      return;
+    }
+
+    const { data: usage, error: usageError } = await supabase
+      .from('assessment_usage')
+      .select('*', { count: 'exact' })
+      .eq('user_id', user.id)
+      .eq('tool_name', 'satellite_assessment');
+
+    const { data: limit, error: limitError } = await supabase
+      .from('usage_limits')
+      .select('limit')
+      .eq('user_id', user.id)
+      .eq('tool_name', 'satellite_assessment')
+      .single();
+
+    if (usageError || limitError) {
+      toast.error('Could not verify usage limits.');
+      return;
+    }
+
+    if (limit && usage && usage.length >= limit.limit) {
+      toast.error('You have reached your usage limit for this feature.');
+      return;
+    }
+
+    setIsSatelliteModalOpen(true);
+  };
+
   const handleNext = () => {
     const currentValue = assessmentData[`step${currentStep + 1}` as keyof AssessmentData] as string;
     
@@ -140,8 +192,8 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
       return;
     }
 
-    if (currentStep === 5 && !currentValue.trim() && assessmentData.step6Images.length === 0) {
-      toast.error('Please provide site information or upload files');
+    if (currentStep === 5 && !currentValue.trim() && assessmentData.step6Images.length === 0 && !assessmentData.satelliteAnalysis) {
+      toast.error('Please provide site information, upload files, or complete a satellite assessment');
       return;
     }
 
@@ -259,26 +311,41 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
           {/* File Upload for Step 6 */}
           {currentStepData.hasFileUpload && (
             <div className="space-y-4">
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
-                <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground mb-2">
-                  Upload site images, layouts, or Google Earth screenshots
-                </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => fileInputRef.current?.click()}
-                  type="button"
-                >
-                  Choose Files
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*,application/pdf"
-                  onChange={(e) => handleFileUpload(e.target.files)}
-                  className="hidden"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center flex flex-col items-center justify-center">
+                  <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Upload site images, layouts, or Google Earth screenshots
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    type="button"
+                  >
+                    Choose Files
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,application/pdf"
+                    onChange={(e) => handleFileUpload(e.target.files)}
+                    className="hidden"
+                  />
+                </div>
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center flex flex-col items-center justify-center">
+                  <MessageCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Use AI to analyze a satellite image of the property
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={handleLaunchSatelliteAssessment}
+                    type="button"
+                  >
+                    Launch Satellite Assessment
+                  </Button>
+                </div>
               </div>
 
               {/* Uploaded Files */}
@@ -302,6 +369,16 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
                   </div>
                 </div>
               )}
+              {assessmentData.satelliteAnalysis && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Satellite Analysis:</p>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      {assessmentData.satelliteAnalysis.overview}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -309,8 +386,8 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
 
       {/* Navigation */}
       <div className="flex justify-between">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={handlePrevious}
           disabled={currentStep === 0}
         >
@@ -341,7 +418,7 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
               rows={3}
             />
             <div className="flex justify-end gap-2">
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => clarificationDialog.onResponse('')}
               >
@@ -354,6 +431,12 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
           </div>
         </DialogContent>
       </Dialog>
+
+      <SatelliteAssessmentModal
+        isOpen={isSatelliteModalOpen}
+        onClose={() => setIsSatelliteModalOpen(false)}
+        onComplete={handleSatelliteAssessmentComplete}
+      />
     </div>
   );
 };
