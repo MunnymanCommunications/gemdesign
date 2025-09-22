@@ -29,18 +29,18 @@ export const useSubscription = () => {
 
       setLoading(true);
       try {
-        // Check for free access first
-        const { data: profile, error: profileError } = await supabase
+        // Check for granted access first
+        const { data: profile } = await supabase
           .from('profiles')
-          .select('has_free_access')
+          .select('granted_tier')
           .eq('id', user.id)
           .single();
 
-        if (profile?.has_free_access) {
+        if (profile?.granted_tier && profile.granted_tier !== 'free') {
           setSubscription({
-            id: 'free-access',
-            tier: 'pro',
-            max_documents: 999,
+            id: 'granted-access',
+            tier: profile.granted_tier,
+            max_documents: profile.granted_tier === 'pro' ? 50 : 5,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             status: 'active',
@@ -51,7 +51,7 @@ export const useSubscription = () => {
           return;
         }
 
-        // If no free access, check for a real subscription
+        // If no granted access, check for a real subscription
         const { data, error } = await supabase
           .from('user_subscriptions')
           .select('*')

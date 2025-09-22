@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Users, FileText, MessageSquare, Activity, RefreshCw, Crown, Shield } from 'lucide-react';
+import { Users, FileText, MessageSquare, Activity, RefreshCw, Crown, Shield, Check } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface UserStats {
   id: string;
@@ -20,6 +21,7 @@ interface UserStats {
   message_count: number;
   last_activity: string | null;
   token_usage: number;
+  granted_tier: string | null;
 }
 
 interface GlobalStats {
@@ -58,7 +60,8 @@ const UserAnalytics = () => {
           company,
           created_at,
           token_usage,
-          role
+          role,
+          granted_tier
         `);
 
       if (usersError) throw usersError;
@@ -139,7 +142,8 @@ const UserAnalytics = () => {
         conversation_count: convCounts[user.id] || 0,
         message_count: msgCounts.counts[user.id] || 0,
         last_activity: msgCounts.lastActivity[user.id] || null,
-        token_usage: user.token_usage || 0
+        token_usage: user.token_usage || 0,
+        granted_tier: user.granted_tier
       })) || [];
 
       setUsers(transformedUsers);
@@ -187,6 +191,23 @@ const UserAnalytics = () => {
       enterprise: 'default'
     } as const;
     return <Badge variant={variants[tier as keyof typeof variants] || 'outline'}>{tier}</Badge>;
+  };
+
+  const handleGrantAccess = async (userId: string, tier: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ granted_tier: tier })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast.success(`Granted ${tier} access to user ${userId}`);
+      fetchAnalytics(); // Refresh data
+    } catch (error) {
+      console.error('Error granting access:', error);
+      toast.error('Failed to grant access');
+    }
   };
 
   if (loading) {
@@ -341,6 +362,28 @@ const UserAnalytics = () => {
                   <div>
                     <p className="text-muted-foreground">Token Usage</p>
                     <p className="font-medium">{user.token_usage.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t">
+                  <h5 className="text-sm font-medium mb-2">Admin Controls</h5>
+                  <div className="flex items-center gap-2">
+                    <Select onValueChange={(value) => handleGrantAccess(user.id, value)}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Grant Access" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="base">Grant Base</SelectItem>
+                        <SelectItem value="pro">Grant Pro</SelectItem>
+                        <SelectItem value="free">Revoke Access</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {user.granted_tier && (
+                      <Badge variant="secondary">
+                        <Check className="h-3 w-3 mr-1" />
+                        {user.granted_tier} Granted
+                      </Badge>
+                    )}
                   </div>
                 </div>
                 

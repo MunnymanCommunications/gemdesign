@@ -323,12 +323,11 @@ const Subscription = () => {
                   <Button 
                     className="w-full"
                     variant={isCurrentPlan ? 'secondary' : plan.popular ? 'default' : 'outline'}
-                    disabled={isCurrentPlan}
+                    disabled={isCurrentPlan && plan.tier !== 'free'}
                     onClick={() => !isCurrentPlan && plan.priceId && handleCheckout(plan.priceId)}
                   >
-                    {isCurrentPlan ? 'Current Plan' :
+                    {isCurrentPlan && plan.tier !== 'free' ? 'Current Plan' :
                      plan.tier === 'enterprise' ? 'Contact Sales' :
-                     plan.tier === 'free' ? 'Your Current Plan' :
                      subscription?.tier === 'free' ? 'Upgrade' : 'Switch Plan'}
                   </Button>
                 </CardContent>
