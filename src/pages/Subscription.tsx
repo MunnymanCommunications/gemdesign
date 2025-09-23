@@ -167,7 +167,7 @@ const Subscription = () => {
                 <Button
                   className="w-full"
                   variant={isCurrentPlan ? 'secondary' : (plan.popular ? 'default' : 'outline')}
-                  disabled={isButtonDisabled || !plan.priceId}
+                  disabled={isButtonDisabled}
                   onClick={() => handleCheckout(plan.priceId)}
                 >
                   {checkoutLoading ? 'Processing...' : (isCurrentPlan && plan.tier !== 'free' ? 'Current Plan' : (subscription?.tier === 'free' ? 'Upgrade' : 'Switch Plan'))}
