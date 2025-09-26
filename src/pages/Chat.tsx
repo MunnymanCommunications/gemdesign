@@ -239,8 +239,22 @@ const Chat = () => {
 
         if (!response.ok) throw new Error('Failed to get AI response');
 
-        const data = await response.json();
-        fullResponse = data.response || "I'm having trouble connecting to my AI services right now. Please try again in a moment.";
+        if (response.body) {
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let done = false;
+
+          while (!done) {
+            const { value, done: readerDone } = await reader.read();
+            done = readerDone;
+            const chunk = decoder.decode(value, { stream: true });
+            fullResponse += chunk;
+            setStreamingMessage(fullResponse);
+          }
+        } else {
+          const data = await response.json();
+          fullResponse = data.response || "I'm having trouble connecting to my AI services right now. Please try again in a moment.";
+        }
         
       } catch (error) {
         console.error('AI API error:', error);
@@ -552,7 +566,19 @@ Please provide a comprehensive security camera system assessment based on this s
                               )}
                             </div>
                           ))}
-                          {isLoading && streamingMessage && (
+                          {isLoading && (
+                            <div className="flex items-start gap-3">
+                              <Bot className="h-6 w-6 text-blue-500" />
+                              <div className="max-w-lg rounded-lg p-3 bg-gray-100 dark:bg-gray-800">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse delay-75"></div>
+                                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse delay-150"></div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {streamingMessage && !isLoading && (
                             <div className="flex items-start gap-3">
                               <Bot className="h-6 w-6 text-blue-500" />
                               <div className="max-w-lg rounded-lg p-3 bg-gray-100 dark:bg-gray-800">

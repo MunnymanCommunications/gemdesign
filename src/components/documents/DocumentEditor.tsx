@@ -130,7 +130,7 @@ const DocumentEditor = ({
         </div>
         <div style="text-align: right;">
           <h2 style="font-size: 28px; font-weight: bold; color: #3b82f6; margin: 0; text-transform: uppercase;">
-            {documentType.toUpperCase()}
+            ${documentType.toUpperCase()}
           </h2>
           <p style="margin: 10px 0; color: #6b7280;">Date: ${new Date().toLocaleDateString()}</p>
           <p style="margin: 5px 0; color: #6b7280;">Doc #: ${documentType.toUpperCase()}-${Date.now().toString().slice(-6)}</p>

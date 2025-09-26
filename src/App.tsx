@@ -23,6 +23,7 @@ import GetStarted from "./pages/GetStarted";
 import HelpfulDocuments from './pages/HelpfulDocuments';
 import BrowserPDFExtractorPage from './pages/BrowserPDFExtractorPage';
 import SatelliteAssessmentPage from './pages/SatelliteAssessment';
+import VoltageDropCalculatorPage from './pages/VoltageDropCalculator';
 import UpgradePage from './pages/Upgrade';
 import PaymentFailedModal from './components/PaymentFailedModal';
 import { useSubscription } from './hooks/useSubscription';
@@ -56,6 +57,9 @@ const AppContent = () => {
               <Route path="/get-started" element={<GetStarted />} />
               <Route path="/helpful-documents" element={<HelpfulDocuments />} />
               <Route path="/satellite-assessment" element={<SatelliteAssessmentPage />} />
+              <Route path="/voltage-drop-calculator" element={<ProRoute />}>
+                <Route index element={<VoltageDropCalculatorPage />} />
+              </Route>
               <Route path="/security-assessment" element={<ProRoute />}>
                 <Route index element={<SecurityAssessmentPage />} />
               </Route>

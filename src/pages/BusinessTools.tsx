@@ -4,7 +4,6 @@ import SEO from '@/components/seo/SEO';
 import InvoiceGenerator from '@/components/business/InvoiceGenerator';
 import ProposalGenerator from '@/components/business/ProposalGenerator';
 import BusinessCalculators from '@/components/business/BusinessCalculators';
-import VoltageDropCalculator from '@/components/business/VoltageDropCalculator';
 import { useRoles } from '@/hooks/useRoles';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +20,6 @@ import {
   Clock,
   Target,
   BarChart3,
-  Zap
 } from 'lucide-react';
 
 const BusinessTools = () => {
@@ -64,16 +62,7 @@ const BusinessTools = () => {
     }
   ];
 
-  const proTools = [
-    {
-      id: 'voltage-calc',
-      title: 'Voltage Drop Calculator',
-      description: 'AI-powered low voltage system calculations',
-      icon: Zap,
-      color: 'bg-purple-500',
-      requiresPro: true
-    }
-  ];
+  const proTools = [];
 
   const tools = [...baseTools, ...(isProOrHigher || isAdmin ? proTools : [])];
 
@@ -117,36 +106,6 @@ const BusinessTools = () => {
             <BusinessCalculators />
           </TabsContent>
 
-          <TabsContent value="voltage-calc" className="space-y-6">
-            {isProOrHigher || isAdmin ? (
-              <VoltageDropCalculator />
-            ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5" />
-                    Voltage Drop Calculator
-                    <Badge variant="secondary">PRO</Badge>
-                  </CardTitle>
-                  <CardDescription>
-                    Advanced AI-powered voltage drop calculations for low voltage systems
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8">
-                    <Zap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Pro Feature</h3>
-                    <p className="text-muted-foreground mb-4">
-                      This advanced voltage drop calculator with AI assistant is available for Pro and Enterprise users.
-                    </p>
-                    <Button variant="outline">
-                      Upgrade to Pro
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

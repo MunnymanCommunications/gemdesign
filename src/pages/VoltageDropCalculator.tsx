@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import Layout from '@/components/layout/Layout';
+import SEO from '@/components/seo/SEO';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +33,7 @@ interface VoltageCalculation {
   created_at: string;
 }
 
-const VoltageDropCalculator = () => {
+const VoltageDropCalculatorPage = () => {
   const { user } = useAuth();
   const [distance, setDistance] = useState('');
   const [current, setCurrent] = useState('');
@@ -72,7 +74,6 @@ const VoltageDropCalculator = () => {
     if (!user) return;
 
     try {
-      // Get the latest conversation
       const { data: conversations, error: convError } = await supabase
         .from('chat_conversations')
         .select('id')
@@ -83,7 +84,6 @@ const VoltageDropCalculator = () => {
       if (convError) throw convError;
 
       if (conversations && conversations.length > 0) {
-        // Get messages from the latest conversation
         const { data: messages, error: msgError } = await supabase
           .from('chat_messages')
           .select('*')
@@ -93,7 +93,6 @@ const VoltageDropCalculator = () => {
         if (msgError) throw msgError;
         
         if (messages && messages.length > 0) {
-          // Transform messages to match our interface
           const transformedMessages: Message[] = messages.map(msg => ({
             id: msg.id,
             role: (msg.role === 'user' || msg.role === 'assistant') ? msg.role : 'user',
@@ -124,7 +123,6 @@ const VoltageDropCalculator = () => {
       return;
     }
 
-    // Wire sizes and their circular mil areas
     const wireSizes: Record<string, number> = {
       '18': 1624,
       '16': 2580,
@@ -145,7 +143,6 @@ const VoltageDropCalculator = () => {
     const cmArea = wireSizes[wireSize];
     const k = material === 'copper' ? 12.9 : 21.2;
 
-    // Voltage drop formula: VD = (2 × K × L × I) / CM
     const voltageDrop = (2 * k * dist * curr) / cmArea;
     const voltageDropPercentage = (voltageDrop / sysVolt) * 100;
 
@@ -196,7 +193,6 @@ const VoltageDropCalculator = () => {
     setChatInput('');
     setIsLoading(true);
 
-    // Add user message to chat
     const newUserMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -206,7 +202,6 @@ const VoltageDropCalculator = () => {
     setChatMessages(prev => [...prev, newUserMessage]);
 
     try {
-      // Prepare context with last conversation if available
       const conversationHistory = lastConversation.map(msg => ({
         role: msg.role,
         content: msg.content
@@ -255,7 +250,6 @@ User question: ${userMessage}`;
 
       if (response.error) throw response.error;
 
-      // Handle streaming response
       const reader = response.data?.body?.getReader();
       if (reader) {
         setStreamingMessage('');
@@ -286,7 +280,6 @@ User question: ${userMessage}`;
           }
         }
 
-        // Add AI response to chat
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
@@ -339,236 +332,212 @@ RESPONSE FORMAT:
 - Suggest follow-up resources when appropriate`;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Calculator Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calculator className="h-5 w-5" />
-              Voltage Drop Calculator
-            </CardTitle>
-            <CardDescription>
-              Calculate voltage drop for low voltage systems
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="distance">Distance (feet)</Label>
-                <Input
-                  id="distance"
-                  value={distance}
-                  onChange={(e) => setDistance(e.target.value)}
-                  placeholder="100"
-                  type="number"
-                />
+    <Layout>
+      <SEO
+        title="Voltage Drop Calculator — Design Rite AI"
+        description="Calculate voltage drop for low voltage systems and get expert AI advice."
+        canonical="/voltage-drop-calculator"
+      />
+      <div className="max-w-6xl mx-auto space-y-6">
+        <header>
+          <h1 className="text-3xl font-bold">Voltage Drop Calculator</h1>
+          <p className="text-muted-foreground mt-2">
+            Calculate voltage drop and get expert advice from our AI assistant
+          </p>
+        </header>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calculator className="h-5 w-5" />
+                Calculator
+              </CardTitle>
+              <CardDescription>
+                Enter the details of your circuit to calculate the voltage drop.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="distance">Distance (feet)</Label>
+                  <Input
+                    id="distance"
+                    value={distance}
+                    onChange={(e) => setDistance(e.target.value)}
+                    placeholder="100"
+                    type="number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="current">Current (amps)</Label>
+                  <Input
+                    id="current"
+                    value={current}
+                    onChange={(e) => setCurrent(e.target.value)}
+                    placeholder="2.5"
+                    type="number"
+                    step="0.1"
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="current">Current (amps)</Label>
-                <Input
-                  id="current"
-                  value={current}
-                  onChange={(e) => setCurrent(e.target.value)}
-                  placeholder="2.5"
-                  type="number"
-                  step="0.1"
-                />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="wireSize">Wire Size (AWG)</Label>
-                <Select value={wireSize} onValueChange={setWireSize}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select wire size" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="18">18 AWG</SelectItem>
-                    <SelectItem value="16">16 AWG</SelectItem>
-                    <SelectItem value="14">14 AWG</SelectItem>
-                    <SelectItem value="12">12 AWG</SelectItem>
-                    <SelectItem value="10">10 AWG</SelectItem>
-                    <SelectItem value="8">8 AWG</SelectItem>
-                    <SelectItem value="6">6 AWG</SelectItem>
-                    <SelectItem value="4">4 AWG</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="wireSize">Wire Size (AWG)</Label>
+                  <Select value={wireSize} onValueChange={setWireSize}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select wire size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="18">18 AWG</SelectItem>
+                      <SelectItem value="16">16 AWG</SelectItem>
+                      <SelectItem value="14">14 AWG</SelectItem>
+                      <SelectItem value="12">12 AWG</SelectItem>
+                      <SelectItem value="10">10 AWG</SelectItem>
+                      <SelectItem value="8">8 AWG</SelectItem>
+                      <SelectItem value="6">6 AWG</SelectItem>
+                      <SelectItem value="4">4 AWG</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="material">Material</Label>
+                  <Select value={material} onValueChange={setMaterial}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="copper">Copper</SelectItem>
+                      <SelectItem value="aluminum">Aluminum</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
               <div>
-                <Label htmlFor="material">Material</Label>
-                <Select value={material} onValueChange={setMaterial}>
+                <Label htmlFor="systemVoltage">System Voltage</Label>
+                <Select value={systemVoltage} onValueChange={setSystemVoltage}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="copper">Copper</SelectItem>
-                    <SelectItem value="aluminum">Aluminum</SelectItem>
+                    <SelectItem value="12">12V DC</SelectItem>
+                    <SelectItem value="24">24V DC</SelectItem>
+                    <SelectItem value="48">48V DC (PoE)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            <div>
-              <Label htmlFor="systemVoltage">System Voltage</Label>
-              <Select value={systemVoltage} onValueChange={setSystemVoltage}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="12">12V DC</SelectItem>
-                  <SelectItem value="24">24V DC</SelectItem>
-                  <SelectItem value="48">48V DC (PoE)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <Button onClick={calculateVoltageDrop} className="w-full">
+                <Zap className="h-4 w-4 mr-2" />
+                Calculate Voltage Drop
+              </Button>
 
-            <Button onClick={calculateVoltageDrop} className="w-full">
-              <Zap className="h-4 w-4 mr-2" />
-              Calculate Voltage Drop
-            </Button>
+              {result && (
+                <Card className={result.isAcceptable ? 'border-green-200' : 'border-red-200'}>
+                  <CardContent className="pt-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>Voltage Drop:</span>
+                        <span className="font-mono">{result.voltageDrop.toFixed(2)}V</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Percentage:</span>
+                        <span className="font-mono">{result.voltageDropPercentage.toFixed(1)}%</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Status:</span>
+                        <Badge variant={result.isAcceptable ? 'default' : 'destructive'}>
+                          {result.isAcceptable ? 'Acceptable' : 'Too High'}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-2">
+                        {result.recommendation}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </CardContent>
+          </Card>
 
-            {result && (
-              <Card className={result.isAcceptable ? 'border-green-200' : 'border-red-200'}>
-                <CardContent className="pt-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Voltage Drop:</span>
-                      <span className="font-mono">{result.voltageDrop.toFixed(2)}V</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Percentage:</span>
-                      <span className="font-mono">{result.voltageDropPercentage.toFixed(1)}%</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Status:</span>
-                      <Badge variant={result.isAcceptable ? 'default' : 'destructive'}>
-                        {result.isAcceptable ? 'Acceptable' : 'Too High'}
-                      </Badge>
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-2">
-                      {result.recommendation}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* AI Chat Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              Low Voltage Expert AI
-            </CardTitle>
-            <CardDescription>
-              Get expert advice on low voltage systems
-            </CardDescription>
-            <Button 
-              onClick={fetchLastConversation} 
-              variant="outline" 
-              size="sm"
-              className="w-fit"
-            >
-              <History className="h-4 w-4 mr-2" />
-              Pull Last Design Rite AI Conversation
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-96 mb-4 p-4 border rounded">
-              {chatMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`mb-4 ${
-                    message.role === 'user' ? 'text-right' : 'text-left'
-                  }`}
-                >
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Low Voltage Expert AI
+              </CardTitle>
+              <CardDescription>
+                Get expert advice on low voltage systems
+              </CardDescription>
+              <Button 
+                onClick={fetchLastConversation} 
+                variant="outline" 
+                size="sm"
+                className="w-fit"
+              >
+                <History className="h-4 w-4 mr-2" />
+                Pull Last Design Rite AI Conversation
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-96 mb-4 p-4 border rounded">
+                {chatMessages.map((message) => (
                   <div
-                    className={`inline-block p-3 rounded-lg max-w-[80%] ${
-                      message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
+                    key={message.id}
+                    className={`mb-4 ${
+                      message.role === 'user' ? 'text-right' : 'text-left'
                     }`}
                   >
-                    <div className="text-sm whitespace-pre-wrap">
-                      {message.content}
+                    <div
+                      className={`inline-block p-3 rounded-lg max-w-[80%] ${
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      }`}
+                    >
+                      <div className="text-sm whitespace-pre-wrap">
+                        {message.content}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-              {streamingMessage && (
-                <div className="mb-4 text-left">
-                  <div className="inline-block p-3 rounded-lg max-w-[80%] bg-muted">
-                    <div className="text-sm whitespace-pre-wrap">
-                      {streamingMessage}
+                ))}
+                {streamingMessage && (
+                  <div className="mb-4 text-left">
+                    <div className="inline-block p-3 rounded-lg max-w-[80%] bg-muted">
+                      <div className="text-sm whitespace-pre-wrap">
+                        {streamingMessage}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </ScrollArea>
-
-            <div className="flex gap-2">
-              <Textarea
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Ask about voltage calculations, wire sizing, code compliance..."
-                className="flex-1"
-                rows={2}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendChatMessage();
-                  }
-                }}
-              />
-              <Button 
-                onClick={sendChatMessage} 
-                disabled={isLoading || !chatInput.trim()}
-                size="sm"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Calculation History */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="h-5 w-5" />
-            Recent Calculations
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {calculations.map((calc) => (
-              <div key={calc.id} className="flex items-center justify-between p-3 bg-muted rounded">
-                <div className="text-sm">
-                  <span className="font-medium">{calc.wire_size} AWG</span> • 
-                  <span className="ml-1">{calc.distance}ft</span> • 
-                  <span className="ml-1">{calc.current_amps}A</span> • 
-                  <span className="ml-1">{calc.material}</span>
-                </div>
-                <div className="text-sm font-mono">
-                  {calc.voltage_drop_calculated.toFixed(2)}V ({calc.voltage_drop_percentage.toFixed(1)}%)
-                </div>
+                )}
+              </ScrollArea>
+              <div className="flex gap-2">
+                <Textarea
+                  placeholder="Ask a question about your calculation..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendChatMessage();
+                    }
+                  }}
+                  disabled={isLoading}
+                />
+                <Button 
+                  onClick={sendChatMessage} 
+                  disabled={!chatInput.trim() || isLoading}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
-            ))}
-            {calculations.length === 0 && (
-              <p className="text-muted-foreground text-center py-8">
-                No calculations yet. Start by calculating a voltage drop above.
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </Layout>
   );
 };
 
-export default VoltageDropCalculator;
+export default VoltageDropCalculatorPage;

@@ -19,7 +19,8 @@ import {
   Moon,
   Camera,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  Zap
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useRoles } from '@/hooks/useRoles.tsx';
@@ -54,6 +55,7 @@ const Navigation = ({ isSidebarCollapsed, toggleSidebar }: NavigationProps) => {
     { path: '/documents', label: 'Documents', icon: FileText },
     { path: '/business-tools', label: 'Business Tools', icon: Wrench },
     { path: '/satellite-assessment', label: 'Satellite Camera Assessment', icon: Camera },
+    { path: '/voltage-drop-calculator', label: 'Voltage Drop Calculator', icon: Zap },
     { path: '/analytics', label: 'Analytics', icon: BarChart3 },
     { path: '/theme', label: 'Theme', icon: Palette },
     { path: '/subscription', label: 'Subscription', icon: CreditCard },
