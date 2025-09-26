@@ -76,6 +76,7 @@ const HelpfulDocumentUpload = () => {
       const filePath = `helpful-documents/${timestamp}_${fileName}`;
       const bucketName = 'helpful_documents';
 
+      setUploadProgress(10);
       // Upload file to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from(bucketName)
@@ -85,6 +86,7 @@ const HelpfulDocumentUpload = () => {
         });
 
       if (uploadError) throw uploadError;
+      setUploadProgress(50);
 
       setUploadProgress(75);
 

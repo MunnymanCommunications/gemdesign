@@ -19,5 +19,9 @@ export async function extractPdfText(file: File): Promise<string> {
 }
 
 export function sanitizeText(text: string): string {
-  return text.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+  // Remove control characters, multiple spaces, and trim
+  return text
+    .replace(/[\x00-\x1F\x7F-\x9F]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }

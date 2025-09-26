@@ -17,12 +17,19 @@ import {
   User,
   Sun,
   Moon,
-  Camera
+  Camera,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useRoles } from '@/hooks/useRoles.tsx';
 
-const Navigation = () => {
+interface NavigationProps {
+  isSidebarCollapsed?: boolean;
+  toggleSidebar?: () => void;
+}
+
+const Navigation = ({ isSidebarCollapsed, toggleSidebar }: NavigationProps) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -67,10 +74,10 @@ const Navigation = () => {
   return (
     <>
       {/* Desktop Navigation */}
-      <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:bg-card lg:border-r lg:border-border">
+      <div className={`hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:bg-card lg:border-r lg:border-border ${isSidebarCollapsed ? 'lg:w-16' : 'lg:w-64'}`}>
         <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
           <div className="flex items-center justify-between flex-shrink-0 px-4">
-            <img src="/logo.png" alt="Design Rite Ai" className="h-10" />
+            {!isSidebarCollapsed && <img src="/logo.png" alt="Design Rite Ai" className="h-10" />}
             <ThemeToggle />
           </div>
           <div className="mt-8 flex flex-col flex-grow">
@@ -86,30 +93,39 @@ const Navigation = () => {
                       isActive
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                    }`}
+                    } ${isSidebarCollapsed ? 'justify-center' : ''}`}
                   >
-                    <Icon className="mr-3 h-5 w-5" />
-                    {item.label}
+                    <Icon className={`h-5 w-5 ${!isSidebarCollapsed ? 'mr-3' : ''}`} />
+                    {!isSidebarCollapsed && item.label}
                   </button>
                 );
               })}
             </nav>
             <div className="px-2 pt-4 border-t border-border">
-              <div className="flex items-center px-2 py-2 text-sm text-muted-foreground">
-                <User className="mr-3 h-5 w-5" />
-                <span className="truncate">{user?.email}</span>
-              </div>
+              {!isSidebarCollapsed && (
+                <div className="flex items-center px-2 py-2 text-sm text-muted-foreground">
+                  <User className="mr-3 h-5 w-5" />
+                  <span className="truncate">{user?.email}</span>
+                </div>
+              )}
               <Button
                 onClick={handleSignOut}
                 variant="ghost"
-                className="w-full justify-start text-muted-foreground hover:text-foreground"
+                className={`w-full justify-start text-muted-foreground hover:text-foreground ${isSidebarCollapsed ? 'justify-center' : ''}`}
               >
-                <LogOut className="mr-3 h-5 w-5" />
-                Sign Out
+                <LogOut className={`h-5 w-5 ${!isSidebarCollapsed ? 'mr-3' : ''}`} />
+                {!isSidebarCollapsed && 'Sign Out'}
               </Button>
             </div>
           </div>
         </div>
+        {toggleSidebar && (
+          <div className="absolute top-1/2 -right-3 transform -translate-y-1/2">
+            <Button onClick={toggleSidebar} variant="outline" size="icon" className="rounded-full">
+              {isSidebarCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Mobile Navigation */}

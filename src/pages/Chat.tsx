@@ -65,6 +65,7 @@ const Chat = () => {
   const [lastAssessmentImages, setLastAssessmentImages] = useState<string[]>([]);
   const [showCompanyForm, setShowCompanyForm] = useState(false);
   const [documentType, setDocumentType] = useState('Proposal');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -182,7 +183,7 @@ const Chat = () => {
         'generate-proposal': 'Generate a professional proposal based on our conversation. Use my uploaded proposal templates for formatting and include relevant services from my pricing document. Make sure to include project timeline, deliverables, and pricing. If site images were uploaded during assessment, reference them in the proposal. Do not include any introductory phrases like "Here is the proposal".',
         'generate-invoice': 'Generate an invoice based on the services we discussed. Use my company information and pricing document to create an accurate invoice with the correct pricing and branding.'
       };
-      userMessage = `${actionMap[activeAction as keyof typeof actionMap]} ${userMessage}`;
+      userMessage = `IMPORTANT: You MUST prioritize the information from the uploaded documents. ${actionMap[activeAction as keyof typeof actionMap]} ${userMessage}`;
     }
     
     setInputMessage('');
@@ -446,16 +447,16 @@ Please provide a comprehensive security camera system assessment based on this s
   };
 
   return (
-    <Layout>
+    <Layout isSidebarCollapsed={isSidebarCollapsed} toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}>
       <SEO
         title="AI Assistant Chat — Design Rite AI"
         description="Chat with your AI assistant for proposals, invoices, and analysis."
         canonical="/chat"
       />
       <div className="max-w-7xl mx-auto h-[calc(100vh-8rem)]">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 h-full">
           {/* Conversations Sidebar */}
-          <div className="lg:col-span-1">
+          <div className={`md:col-span-1 lg:col-span-1 ${currentConversation ? 'hidden md:block' : 'block'}`}>
             <Card className="h-full">
               <CardHeader>
                 <div className="flex justify-between items-center">
@@ -470,7 +471,9 @@ Please provide a comprehensive security camera system assessment based on this s
                   <ConversationList
                     conversations={conversations}
                     currentConversation={currentConversation}
-                    onConversationSelect={setCurrentConversation}
+                    onConversationSelect={(id) => {
+                      setCurrentConversation(id);
+                    }}
                     onConversationDeleted={refreshConversations}
                     onPriorityUpdate={handlePriorityUpdate}
                   />
@@ -480,7 +483,7 @@ Please provide a comprehensive security camera system assessment based on this s
           </div>
 
           {/* Chat Area */}
-          <div className="lg:col-span-3">
+          <div className={`md:col-span-2 lg:col-span-3 ${!currentConversation ? 'hidden md:block' : 'block'}`}>
             <Card className="h-full flex flex-col">
               <CardHeader>
                 <div className="flex items-center justify-between">

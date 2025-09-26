@@ -18,6 +18,8 @@ export interface CompanyInfoData {
   industry?: string;
   companySize?: string;
   contactPerson?: string;
+  timeline: string;
+  priority: number;
 }
 
 const CompanyInfoForm = ({ open, onSubmit, onCancel }: CompanyInfoFormProps) => {
@@ -26,13 +28,38 @@ const CompanyInfoForm = ({ open, onSubmit, onCancel }: CompanyInfoFormProps) => 
     assessmentType: 'security',
     industry: '',
     companySize: '',
-    contactPerson: ''
+    contactPerson: '',
+    timeline: '',
+    priority: 0
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.companyName.trim()) {
-      onSubmit(formData);
+    if (formData.companyName.trim() && formData.timeline) {
+      let priority = 49;
+      switch (formData.timeline) {
+        case '2-4w':
+          priority = 100;
+          break;
+        case '1-2m':
+          priority = 90;
+          break;
+        case '3m':
+          priority = 80;
+          break;
+        case '6-9m':
+          priority = 70;
+          break;
+        case '9-12m':
+          priority = 60;
+          break;
+        case '1-1.5y':
+          priority = 50;
+          break;
+        default:
+          priority = 49;
+      }
+      onSubmit({ ...formData, priority });
     }
   };
 
@@ -63,10 +90,32 @@ const CompanyInfoForm = ({ open, onSubmit, onCancel }: CompanyInfoFormProps) => 
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="timeline">Timeline *</Label>
+            <Select
+              value={formData.timeline}
+              onValueChange={(value) => handleChange('timeline', value)}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a timeline" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2-4w">2 weeks to 4 weeks</SelectItem>
+                <SelectItem value="1-2m">1 month to 2 months</SelectItem>
+                <SelectItem value="3m">3 months</SelectItem>
+                <SelectItem value="6-9m">6 months to 9 months</SelectItem>
+                <SelectItem value="9-12m">9 to 12 months</SelectItem>
+                <SelectItem value="1-1.5y">1 year to 1.5 years</SelectItem>
+                <SelectItem value="none">No timeline specified</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="assessmentType">Assessment Type</Label>
-            <Select 
-              value={formData.assessmentType} 
-              onValueChange={(value: 'security' | 'general' | 'compliance') => 
+            <Select
+              value={formData.assessmentType}
+              onValueChange={(value: 'security' | 'general' | 'compliance') =>
                 handleChange('assessmentType', value)
               }
             >

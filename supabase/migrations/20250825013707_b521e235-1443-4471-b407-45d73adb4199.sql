@@ -1,2 +1,0 @@
--- Update ai-chat function to handle structured assessment data and images
--- This migration ensures the edge function can process both regular chat and structured assessment data

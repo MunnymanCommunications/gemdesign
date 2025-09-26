@@ -76,16 +76,16 @@ const GlobalAIDocumentUpload = () => {
         : file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const filePath = `global-ai-documents/${timestamp}_${fileName}`;
 
+      setUploadProgress(10);
       // Upload file to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: false,
         });
 
       if (uploadError) throw uploadError;
-
       setUploadProgress(50);
 
       // Extract text from PDFs using the client-side extractor

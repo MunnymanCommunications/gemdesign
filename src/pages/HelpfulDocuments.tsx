@@ -54,19 +54,6 @@ const HelpfulDocuments = () => {
     window.open(worksheet.file_path, '_blank');
   };
 
-  const printWorksheet = (worksheet: HelpfulDocument) => {
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = worksheet.file_path;
-    document.body.appendChild(iframe);
-    
-    iframe.onload = () => {
-      iframe.contentWindow?.print();
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 1000);
-    };
-  };
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -142,34 +129,23 @@ const HelpfulDocuments = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <Button
                       onClick={() => viewWorksheet(document)}
                       variant="outline"
                       size="sm"
-                      className="w-full"
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       View
                     </Button>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        onClick={() => downloadWorksheet(document)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
-                      <Button
-                        onClick={() => printWorksheet(document)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Printer className="h-4 w-4 mr-2" />
-                        Print
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={() => downloadWorksheet(document)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
