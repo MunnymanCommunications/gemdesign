@@ -18,6 +18,7 @@ export interface CompanyInfoData {
   industry?: string;
   companySize?: string;
   contactPerson?: string;
+  dueDate?: string;
   timeline: string;
   priority: number;
 }
@@ -29,6 +30,7 @@ const CompanyInfoForm = ({ open, onSubmit, onCancel }: CompanyInfoFormProps) => 
     industry: '',
     companySize: '',
     contactPerson: '',
+    dueDate: '',
     timeline: '',
     priority: 0
   });
@@ -37,9 +39,27 @@ const CompanyInfoForm = ({ open, onSubmit, onCancel }: CompanyInfoFormProps) => 
     e.preventDefault();
     if (formData.companyName.trim() && formData.timeline) {
       let priority = 49;
-      switch (formData.timeline) {
-        case '2-4w':
-          priority = 100;
+      
+      // Calculate priority based on due date
+      if (formData.dueDate) {
+        const dueDate = new Date(formData.dueDate);
+        const now = new Date();
+        const timeLeft = dueDate.getTime() - now.getTime();
+        const daysLeft = Math.ceil(timeLeft / (1000 * 3600 * 24));
+
+        if (daysLeft <= 7) {
+          priority = 100; // Due within a week
+        } else if (daysLeft <= 30) {
+          priority = 80; // Due within a month
+        } else if (daysLeft <= 90) {
+          priority = 60; // Due within 3 months
+        } else {
+          priority = 40; // Due in more than 3 months
+        }
+      } else {
+        switch (formData.timeline) {
+          case '2-4w':
+            priority = 100;
           break;
         case '1-2m':
           priority = 90;
@@ -58,6 +78,7 @@ const CompanyInfoForm = ({ open, onSubmit, onCancel }: CompanyInfoFormProps) => 
           break;
         default:
           priority = 49;
+        }
       }
       onSubmit({ ...formData, priority });
     }
@@ -88,6 +109,18 @@ const CompanyInfoForm = ({ open, onSubmit, onCancel }: CompanyInfoFormProps) => 
               required
             />
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="dueDate">Due Date (Optional)</Label>
+            <Input
+              id="dueDate"
+              type="date"
+              value={formData.dueDate || ''}
+              onChange={(e) => handleChange('dueDate', e.target.value)}
+              placeholder="Enter due date"
+            />
+          </div>
+ 
 
           <div className="space-y-2">
             <Label htmlFor="timeline">Timeline *</Label>

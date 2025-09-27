@@ -24,6 +24,40 @@ interface UserStats {
   granted_tier: string | null;
 }
 
+const getAccessStatus = (user: UserStats) => {
+  // Priority order: Admin grants > Stripe subscriptions > No access
+  
+  if (user.granted_tier && user.granted_tier !== 'base') {
+    return {
+      label: `Granted ${user.granted_tier.charAt(0).toUpperCase() + user.granted_tier.slice(1)}`,
+      variant: 'default' as const,
+      source: 'admin_grant'
+    };
+  }
+  
+  if (user.has_free_access) {
+    return {
+      label: 'Granted Base',
+      variant: 'secondary' as const,
+      source: 'admin_grant'
+    };
+  }
+  
+  if (user.subscription?.is_active && user.subscription.source === 'stripe') {
+    return {
+      label: `Stripe ${user.subscription.effective_tier.charAt(0).toUpperCase() + user.subscription.effective_tier.slice(1)}`,
+      variant: 'outline' as const,
+      source: 'stripe'
+    };
+  }
+  
+  return {
+    label: 'No Access',
+    variant: 'destructive' as const,
+    source: 'none'
+  };
+};
+
 interface GlobalStats {
   total_users: number;
   total_admins: number;
@@ -42,6 +76,7 @@ const UserAnalytics = () => {
   const [users, setUsers] = useState<UserStats[]>([]);
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updatingUsers, setUpdatingUsers] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchAnalytics();
@@ -50,21 +85,23 @@ const UserAnalytics = () => {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      // Fetch user data with roles and stats
-      const { data: usersData, error: usersError } = await supabase
+      // 1. Get all profiles
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          email,
-          full_name,
-          company,
-          created_at,
-          token_usage,
-          role,
-          granted_tier
-        `);
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (usersError) throw usersError;
+      if (profilesError) throw profilesError;
+
+      // 2. Get real-time subscription status for each user
+      const usersWithSubscriptions = await Promise.all(
+        profiles.map(async (profile) => {
+          const { data: subscription } = await supabase.rpc('get_user_subscription_status', {
+            p_user_id: profile.id
+          });
+          return { ...profile, subscription: subscription?.[0] };
+        })
+      );
 
       // Get document counts per user
       const { data: docsData, error: docError } = await supabase
@@ -77,7 +114,6 @@ const UserAnalytics = () => {
       docsData?.forEach(doc => {
         docCounts[doc.user_id] = (docCounts[doc.user_id] || 0) + 1;
       });
-
 
       // Get conversation counts per user
       const { data: convCounts, error: convError } = await supabase
@@ -113,38 +149,24 @@ const UserAnalytics = () => {
 
       if (msgError) throw msgError;
 
-      // Get subscriptions for each user
-      const { data: subscriptionsData, error: subscriptionsError } = await supabase
-        .from('user_subscriptions')
-        .select('user_id, tier, max_documents');
-
-      if (subscriptionsError) throw subscriptionsError;
-
-      const userSubscriptions: Record<string, { tier: string; max_documents: number }> = {};
-      subscriptionsData?.forEach(sub => {
-        userSubscriptions[sub.user_id] = {
-          tier: sub.tier,
-          max_documents: sub.max_documents
-        };
-      });
-
       // Transform users data
-      const transformedUsers: UserStats[] = usersData?.map(user => ({
+      const transformedUsers: UserStats[] = usersWithSubscriptions.map(user => ({
         id: user.id,
         email: user.email || '',
         full_name: user.full_name,
         company: user.company,
         created_at: user.created_at,
         role: user.role || 'user',
-        subscription_tier: userSubscriptions[user.id]?.tier || 'base',
-        max_documents: userSubscriptions[user.id]?.max_documents || 1,
+        subscription_tier: user.subscription?.effective_tier || 'base',
+        max_documents: user.subscription?.max_documents || 1,
         document_count: docCounts[user.id] || 0,
         conversation_count: convCounts[user.id] || 0,
         message_count: msgCounts.counts[user.id] || 0,
         last_activity: msgCounts.lastActivity[user.id] || null,
         token_usage: user.token_usage || 0,
-        granted_tier: user.granted_tier
-      })) || [];
+        granted_tier: user.granted_tier,
+        ...user
+      }));
 
       setUsers(transformedUsers);
 
@@ -193,20 +215,40 @@ const UserAnalytics = () => {
     return <Badge variant={variants[tier as keyof typeof variants] || 'outline'}>{tier}</Badge>;
   };
 
+  const updateUserAccess = async (userId: string, grantedTier: string | null, hasFreeAccess: boolean) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        granted_tier: grantedTier,
+        has_free_access: hasFreeAccess
+      })
+      .eq('id', userId);
+      
+    if (error) throw error;
+
+    // After update, reload users to get fresh data
+    await fetchAnalytics();
+  };
+
   const handleGrantAccess = async (userId: string, tier: string) => {
+    setUpdatingUsers(prev => new Set(prev.add(userId)));
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ granted_tier: tier })
-        .eq('id', userId);
-
-      if (error) throw error;
-
+      if (tier === 'base') {
+        await updateUserAccess(userId, null, true);
+      } else if (tier === 'pro' || tier === 'enterprise') {
+        await updateUserAccess(userId, tier, false);
+      } else if (tier === 'free') {
+        await updateUserAccess(userId, null, false);
+      }
       toast.success(`Granted ${tier} access to user ${userId}`);
-      fetchAnalytics(); // Refresh data
     } catch (error) {
-      console.error('Error granting access:', error);
-      toast.error('Failed to grant access');
+      toast.error('Failed to update access');
+    } finally {
+      setUpdatingUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
     }
   };
 
@@ -333,7 +375,7 @@ const UserAnalytics = () => {
                     )}
                   </div>
                   <div className="text-right">
-                    {getSubscriptionBadge(user.subscription_tier)}
+                    <Badge variant={getAccessStatus(user).variant}>{getAccessStatus(user).label}</Badge>
                   </div>
                 </div>
                 
@@ -368,17 +410,20 @@ const UserAnalytics = () => {
                 <div className="mt-4 pt-4 border-t">
                   <h5 className="text-sm font-medium mb-2">Admin Controls</h5>
                   <div className="flex items-center gap-2">
-                    <Select onValueChange={(value) => handleGrantAccess(user.id, value)}>
+                    <Select onValueChange={(value) => handleGrantAccess(user.id, value)} disabled={updatingUsers.has(user.id)}>
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Grant Access" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="base">Grant Base</SelectItem>
                         <SelectItem value="pro">Grant Pro</SelectItem>
+                        <SelectItem value="enterprise">Grant Enterprise</SelectItem>
                         <SelectItem value="free">Revoke Access</SelectItem>
                       </SelectContent>
                     </Select>
-                    {user.granted_tier && (
+                    {updatingUsers.has(user.id) ? (
+                      <Badge variant="secondary">Updating...</Badge>
+                    ) : user.granted_tier && (
                       <Badge variant="secondary">
                         <Check className="h-3 w-3 mr-1" />
                         {user.granted_tier} Granted
