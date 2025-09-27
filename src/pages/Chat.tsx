@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,6 +7,7 @@ import QuickActions from '@/components/chat/QuickActions';
 import ConversationList from '@/components/chat/ConversationList';
 import MessageFormatter from '@/components/chat/MessageFormatter';
 import DocumentEditor from '@/components/documents/DocumentEditor';
+import DocumentEditorProps from '@/components/documents/DocumentEditor';
 import AssessmentForm from '@/components/chat/AssessmentForm';
 import CompanyInfoForm, { CompanyInfoData } from '@/components/chat/CompanyInfoForm';
 import { Button } from '@/components/ui/button';
@@ -430,25 +430,25 @@ const Chat = () => {
       setLastAssessmentImages(imagesBase64);
 
       const assessmentMessage = `STRUCTURED ASSESSMENT DATA:
-
-**Project Driver:** ${data.step1}
-
-**Client Priorities:** ${data.step2}
-
-**Budget Information:** ${data.step3}
-
-**Storage & Camera Requirements:** ${data.step4}
-
-**Decision Maker:** ${data.step5}
-
-**Site Layout Information:** ${data.step6}
-${data.step6Images.length > 0 ? `\n**Site Images:** ${data.step6Images.length} image(s) uploaded for analysis` : ''}
-
-**Project Roadmap:** ${data.step7}
-
-${data.additionalNotes ? `**Additional Notes:** ${data.additionalNotes}` : ''}
-
-Please provide a comprehensive security camera system assessment based on this structured information. Include specific recommendations, pricing considerations, and implementation timeline.`;
+      
+      **Project Driver:** ${data.step1}
+      
+      **Client Priorities:** ${data.step2}
+      
+      **Budget Information:** ${data.step3}
+      
+      **Storage & Camera Requirements:** ${data.step4}
+      
+      **Decision Maker:** ${data.step5}
+      
+      **Site Layout Information:** ${data.step6}
+      ${data.step6Images.length > 0 ? `\n**Site Images:** ${data.step6Images.length} image(s) uploaded for analysis` : ''}
+      
+      **Project Roadmap:** ${data.step7}
+      
+      ${data.additionalNotes ? `**Additional Notes:** ${data.additionalNotes}` : ''}
+      
+      Please provide a comprehensive security camera system assessment based on this structured information. Include specific recommendations, pricing considerations, and implementation timeline.`;
 
       // Send structured message with images
       await sendMessage(assessmentMessage, structuredData);
@@ -506,7 +506,7 @@ Please provide a comprehensive security camera system assessment based on this s
             </Card>
           </div>
 
-          {/* Chat Area */}
+          {/* Chat Interface */}
           <div className={`${isConversationListCollapsed ? 'col-span-1' : 'md:col-span-2 lg:col-span-3'} ${!currentConversation ? 'hidden md:block' : 'block'}`}>
             <Card className="h-full flex flex-col">
               {currentConversation ? (
@@ -514,79 +514,45 @@ Please provide a comprehensive security camera system assessment based on this s
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2">
-                        <Bot className="h-5 w-5" />
-                        AI Assistant
-                        <Badge variant="secondary">Beta</Badge>
+                        <MessageSquare className="h-4 w-4" />
+                        AI Chat
                       </CardTitle>
-                      
-                      {/* Mode Toggle */}
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <MessageSquare className="h-4 w-4" />
-                          <Label htmlFor="mode-toggle" className="text-sm font-medium">
-                            Free Chat
-                          </Label>
-                        </div>
+                        <Label htmlFor="assessment-mode" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed">
+                          Assessment Mode
+                        </Label>
                         <Switch
-                          id="mode-toggle"
+                          id="assessment-mode"
                           checked={isAssessmentMode}
                           onCheckedChange={setIsAssessmentMode}
                         />
-                        <div className="flex items-center gap-2">
-                          <ClipboardList className="h-4 w-4" />
-                          <Label htmlFor="mode-toggle" className="text-sm font-medium">
-                            Assessment
-                          </Label>
-                        </div>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="flex-1 p-0">
                     {isAssessmentMode ? (
-                      <div className="h-[calc(100vh-16rem)] p-6 overflow-y-auto">
-                        <AssessmentForm
-                          onSubmit={handleAssessmentSubmit}
-                          onCancel={() => setIsAssessmentMode(false)}
-                        />
-                      </div>
+                      <AssessmentForm
+                        onSubmit={handleAssessmentSubmit}
+                        onCancel={() => setIsAssessmentMode(false)}
+                      />
                     ) : (
-                      <ScrollArea className="h-[calc(100vh-16rem)] p-4">
-                        <div className="space-y-4">
-                          {messages.map((message) => (
-                            <div
-                              key={message.id}
-                              className={`flex gap-3 ${
-                                message.role === 'user' ? 'justify-end' : ''
-                              }`}
-                            >
-                              {message.role === 'assistant' && (
-                                <Bot className="h-6 w-6 text-primary flex-shrink-0" />
-                              )}
-                              <div
-                                className={`p-3 rounded-lg max-w-lg ${
-                                  message.role === 'user'
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted'
-                                }`}
-                              >
-                                <MessageFormatter content={message.content} />
-                              </div>
-                              {message.role === 'user' && (
-                                <User className="h-6 w-6 text-muted-foreground flex-shrink-0" />
-                              )}
+                      <div className="h-[calc(100vh-16rem)] p-6 overflow-y-auto">
+                        {messages.map((message) => (
+                          <div key={message.id} className={`mb-4 ${message.role === 'user' ? 'text-right' : ''}`}>
+                            <div className={`inline-block p-3 rounded-lg max-w-[80%] ${message.role === 'user' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                              <MessageFormatter content={message.content} />
                             </div>
-                          ))}
-                          {streamingMessage && (
-                            <div className="flex gap-3">
-                              <Bot className="h-6 w-6 text-primary flex-shrink-0" />
-                              <div className="p-3 rounded-lg max-w-lg bg-muted">
-                                <MessageFormatter content={streamingMessage} />
-                              </div>
+                          </div>
+                        ))}
+                        {streamingMessage && (
+                          <div className="mb-4">
+                            <div className="inline-block p-3 rounded-lg bg-gray-100 text-gray-800 max-w-[80%]">
+                              <MessageFormatter content={streamingMessage} />
                             </div>
-                          )}
-                          <div ref={messagesEndRef} />
-                        </div>
-                      </ScrollArea>
+                          </div>
+                        )}
+                        <div ref={messagesEndRef} />
+                      </div>
                     )}
                   </CardContent>
                   <div className="p-4 border-t space-y-4">
@@ -596,10 +562,11 @@ Please provide a comprehensive security camera system assessment based on this s
                     />
                     <div className="flex gap-2">
                       <Input
+                        type="text"
+                        placeholder="Type your message..."
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        placeholder="Type your message..."
                         disabled={isLoading}
                       />
                       <Button onClick={() => sendMessage()} disabled={isLoading}>
@@ -627,20 +594,8 @@ Please provide a comprehensive security camera system assessment based on this s
           </div>
         </div>
       </div>
-      {showDocumentEditor && (
-        <DocumentEditor
-          isOpen={showDocumentEditor}
-          onClose={() => setShowDocumentEditor(false)}
-          content={generatedContent}
-          documentType={documentType}
-          conversationId={currentConversation}
-        />
-      )}
-      <CompanyInfoForm
-        open={showCompanyForm}
-        onSubmit={handleCompanyFormSubmit}
-        onCancel={() => setShowCompanyForm(false)}
-      />
     </Layout>
   );
 };
+
+export default Chat;
