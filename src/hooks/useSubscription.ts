@@ -98,13 +98,17 @@ export const useSubscription = () => {
   const isPro = subscription?.tier === 'pro';
   const isEnterprise = subscription?.tier === 'enterprise';
   const isProOrHigher = isPro || isEnterprise;
+  const isActive = subscription?.status === 'active' || subscription?.status === 'trialing';
+  const tier = subscription?.tier;
 
-  return { 
-    subscription, 
-    loading, 
-    error, 
-    isPro, 
-    isEnterprise, 
-    isProOrHigher 
+  return {
+    subscription,
+    loading,
+    error,
+    isPro,
+    isEnterprise,
+    isProOrHigher,
+    isActive,
+    tier
   };
 };

@@ -377,7 +377,7 @@ const Chat = () => {
       
       // Send initial context message to AI
       const contextMessage = `Starting ${companyData.assessmentType} assessment for ${companyData.companyName}. Company details: Industry: ${companyData.industry || 'Not specified'}, Size: ${companyData.companySize || 'Not specified'}, Contact: ${companyData.contactPerson || 'Not specified'}. Please begin the assessment with appropriate questions.`;
-      await sendMessage(contextMessage, companyData);
+      // await sendMessage(contextMessage, companyData);
     }
   };
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import Layout from '@/components/layout/Layout';
@@ -23,6 +24,15 @@ const Documents = () => {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [documentCount, setDocumentCount] = useState(0);
   const [refreshCount, setRefreshCount] = useState(0);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (searchParams.get('session_id')) {
+      toast.success('Payment successful! Your subscription has been upgraded.');
+      navigate('/documents', { replace: true });
+    }
+  }, [searchParams, navigate]);
 
   useEffect(() => {
     if (user) {
