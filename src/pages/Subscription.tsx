@@ -73,28 +73,23 @@ const Subscription = () => {
     
     // Ensure valid priceId before calling checkout
     if (!priceId || !pricing?.[0]?.stripe_price_id_pro) {
-      toast.error("Pricing not configured");
+      toast({ title: "Configuration Error", description: "Pricing not configured" });
       return;
     }
 
-    setCheckoutLoading(true);
-    try {
-      // Call edge function with proper error handling
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: { priceId, userId: user.id }
-      });
+    // Call edge function with proper error handling
+    const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+      body: { priceId, userId: user.id }
+    });
 
-      if (error) {
-        console.error('Stripe error:', error);
-        toast.error(error.message || "Subscription error");
-        return;
-      }
+    if (error) {
+      console.error('Stripe error:', error);
+      toast({ title: "Subscription Error", description: error.message });
+      return;
+    }
 
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    } finally {
-      setCheckoutLoading(false);
+    if (data?.url) {
+      window.location.href = data.url;
     }
   };
 

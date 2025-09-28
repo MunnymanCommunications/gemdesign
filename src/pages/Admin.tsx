@@ -20,6 +20,7 @@ import UserAnalytics from '@/components/admin/UserAnalytics';
 import StripeManager from '@/components/admin/StripeManager';
 import UsageLimitsManager from '@/components/admin/UsageLimitsManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface AdminSettings {
   id: string;
@@ -56,10 +57,14 @@ const [customModel, setCustomModel] = useState('');
 const { isAdmin } = useRoles();
 const [temperature, setTemperature] = useState(0.7);
 const [maxTokens, setMaxTokens] = useState(1500);
+const [helpfulDocs, setHelpfulDocs] = useState([]);
+const [users, setUsers] = useState([]);
 
 useEffect(() => {
   fetchSettings();
   fetchStripeStatus();
+  fetchHelpfulDocs();
+  loadUsers();
 }, []);
 
   const fetchSettings = async () => {
@@ -193,6 +198,90 @@ You can reference uploaded documents to help with business tasks, generate invoi
       setSaving(false);
     }
   };
+  
+  const fetchHelpfulDocs = async () => {
+    try {
+      const { data: docs, error } = await supabase.from('helpful_documents').select('*');
+      if (error) throw error;
+      setHelpfulDocs(docs || []);
+    } catch (error) {
+      console.error('Error fetching helpful documents:', error);
+      toast.error('Failed to load helpful documents');
+    }
+  };
+  
+  const deleteDocument = async (docId: string) => {
+    if (!confirm('Are you sure you want to delete this document?')) return;
+  
+    try {
+      const { error } = await supabase.functions.invoke('delete-helpful-document', {
+        body: { document_id: docId }
+      });
+      if (error) throw error;
+      setHelpfulDocs(helpfulDocs.filter((doc) => doc.id !== docId));
+      toast.success('Document deleted successfully');
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      toast.error('Failed to delete document');
+    }
+  };
+  
+  const loadUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*, subscription:subscriptions(*)');
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      toast.error('Failed to load users');
+    }
+  };
+  
+  const updateUserAccess = async (userId: string, grantedTier: string | null, hasFreeAccess: boolean) => {
+    // Optional: Optimistic update
+    setUsers(prev => prev.map(user =>
+      user.id === userId
+        ? { ...user, granted_tier: grantedTier, has_free_access: hasFreeAccess }
+        : user
+    ));
+  
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          granted_tier: grantedTier,     // 'pro', 'enterprise', or null
+          has_free_access: hasFreeAccess  // true for base, false for revoke
+        })
+        .eq('id', userId);  // ← CRITICAL: Use target userId, not auth.uid()
+  
+      if (error) throw error;
+  
+      // Refresh data after success
+      await loadUsers();
+      toast.success('User access updated successfully');
+    } catch (error) {
+      // Revert optimistic update on error
+      await loadUsers();
+      console.error('Error updating user access:', error);
+      toast.error('Failed to update user access');
+    }
+  };
+  
+  const getAccessStatus = (user: any) => {
+    // Priority: admin_grant > free_access > stripe > none
+    if (user.granted_tier && user.granted_tier !== 'base') {
+      return { label: `Granted ${user.granted_tier}`, variant: 'default' };
+    }
+    if (user.has_free_access) {
+      return { label: 'Granted Base', variant: 'secondary' };
+    }
+    if (user.subscription?.is_active && user.subscription.source === 'stripe') {
+      return { label: `Stripe ${user.subscription.effective_tier}`, variant: 'outline' };
+    }
+    return { label: 'No Access', variant: 'destructive' };
+  };
 
 
   if (!isAdmin) {
@@ -269,6 +358,10 @@ You can reference uploaded documents to help with business tasks, generate invoi
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Documents
+            </TabsTrigger>
+            <TabsTrigger value="doc-management" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Doc Management
             </TabsTrigger>
           </TabsList>
 
@@ -592,7 +685,72 @@ You can reference uploaded documents to help with business tasks, generate invoi
         </div>
           </TabsContent>
 
-          <TabsContent value="users">
+          <TabsContent value="users" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>Grant/revoke access to users</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Current Access</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.full_name || 'N/A'}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant={getAccessStatus(user).variant}>
+                            {getAccessStatus(user).label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="space-x-2">
+                          <Select
+                            onValueChange={(value) => {
+                              let grantedTier: string | null = null;
+                              let hasFreeAccess = false;
+                              switch (value) {
+                                case 'pro':
+                                  grantedTier = 'pro';
+                                  break;
+                                case 'enterprise':
+                                  grantedTier = 'enterprise';
+                                  break;
+                                case 'base':
+                                  hasFreeAccess = true;
+                                  break;
+                                case 'revoke':
+                                  grantedTier = null;
+                                  hasFreeAccess = false;
+                                  break;
+                              }
+                              updateUserAccess(user.id, grantedTier, hasFreeAccess);
+                            }}
+                          >
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue placeholder="Grant Access" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pro">Grant Pro</SelectItem>
+                              <SelectItem value="enterprise">Grant Enterprise</SelectItem>
+                              <SelectItem value="base">Grant Base Access</SelectItem>
+                              <SelectItem value="revoke">Revoke Access</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
             <InviteTokenManager />
           </TabsContent>
 
@@ -609,6 +767,29 @@ You can reference uploaded documents to help with business tasks, generate invoi
               <HelpfulDocumentUpload />
               <GlobalAIDocumentUpload />
             </div>
+          </TabsContent>
+          <TabsContent value="doc-management">
+            <Card>
+              <CardHeader>
+                <CardTitle>Document Management</CardTitle>
+                <CardDescription>Manage helpful documents</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul>
+                  {helpfulDocs.map((doc) => (
+                    <li key={doc.id} className="flex items-center justify-between">
+                      <span>{doc.file_name}</span>
+                      <Button
+                        variant="destructive"
+                        onClick={() => deleteDocument(doc.id)}
+                      >
+                        Delete
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
