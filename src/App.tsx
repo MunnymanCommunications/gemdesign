@@ -64,10 +64,10 @@ const AppContent = () => {
                 <Route index element={<VoltageDropCalculatorPage />} />
               </Route>
               <Route path="/security-assessment" element={<ProRoute />}>
-<Route path="/voltage" element={<VoltageDropCalculatorPage />} />
                 <Route index element={<SecurityAssessmentPage />} />
               </Route>
             </Route>
+<Route path="/voltage" element={<VoltageDropCalculatorPage />} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
