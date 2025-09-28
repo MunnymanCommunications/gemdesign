@@ -50,38 +50,47 @@ const Subscription = () => {
 
   const fetchAdminSettings = async () => {
     try {
-      const { data, error } = await supabase
-        .from('admin_settings')
-        .select('max_base_documents, max_pro_documents, stripe_price_id_base, stripe_price_id_pro')
-        .limit(1)
-        .single();
+      const { data, error } = await supabase.rpc('get_public_pricing_settings');
       if (error) throw error;
-      setAdminSettings(data);
+      setAdminSettings({
+        max_base_documents: data?.[0]?.max_base_documents || 5,
+        max_pro_documents: data?.[0]?.max_pro_documents || 50,
+        stripe_price_id_base: data?.[0]?.stripe_price_id_base || null,
+        stripe_price_id_pro: data?.[0]?.stripe_price_id_pro || null,
+      });
     } catch (error) {
-      console.error('Error fetching admin settings:', error);
+      console.error('Error fetching pricing settings:', error);
     } finally {
       setSettingsLoading(false);
     }
   };
 
-  const handleCheckout = async (priceId: string | null) => {
-    if (!user) return;
-    if (!priceId) {
-      toast.error("This plan is not yet configured for payments. Please contact support.");
+  const handleSubscribe = async (priceId: string) => {
+    // Use public pricing function instead of admin_settings
+    const { data: pricing } = await supabase.rpc('get_public_pricing_settings');
+    
+    // Ensure valid priceId before calling checkout
+    if (!priceId || !pricing?.[0]?.stripe_price_id_pro) {
+      toast.error("Pricing not configured");
       return;
     }
+
     setCheckoutLoading(true);
     try {
+      // Call edge function with proper error handling
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: { priceId, userId: user.id },
+        body: { priceId, userId: user.id }
       });
-      if (error) throw error;
-      if (data.url) {
+
+      if (error) {
+        console.error('Stripe error:', error);
+        toast.error(error.message || "Subscription error");
+        return;
+      }
+
+      if (data?.url) {
         window.location.href = data.url;
       }
-    } catch (error) {
-      console.error('Error creating checkout session:', error);
-      toast.error("Could not create a checkout session. Please try again.");
     } finally {
       setCheckoutLoading(false);
     }
@@ -163,17 +172,6 @@ const Subscription = () => {
               const isCurrentPlan = subscription?.tier === plan.tier;
               const isButtonDisabled = (isCurrentPlan && plan.tier !== 'free') || checkoutLoading;
 
-              const checkoutButton = (
-                <Button
-                  className="w-full"
-                  variant={isCurrentPlan ? 'secondary' : (plan.popular ? 'default' : 'outline')}
-                  disabled={isButtonDisabled}
-                  onClick={() => handleCheckout(plan.priceId)}
-                >
-                  {checkoutLoading ? 'Processing...' : (isCurrentPlan && plan.tier !== 'free' ? 'Current Plan' : (subscription?.tier === 'free' ? 'Upgrade' : 'Switch Plan'))}
-                </Button>
-              );
-
               return (
                 <Card key={plan.tier} className={`flex flex-col ${plan.popular ? 'ring-2 ring-primary' : ''}`}>
                   <CardHeader className="text-center">
@@ -207,7 +205,16 @@ const Subscription = () => {
                             <p>Admin needs to set the Stripe Price ID.</p>
                           </TooltipContent>
                         </Tooltip>
-                      ) : checkoutButton}
+                      ) : (
+                        <Button
+                          className="w-full"
+                          variant={isCurrentPlan ? 'secondary' : (plan.popular ? 'default' : 'outline')}
+                          disabled={isButtonDisabled}
+                          onClick={() => handleSubscribe(plan.priceId!)}
+                        >
+                          {checkoutLoading ? 'Processing...' : (isCurrentPlan && plan.tier !== 'free' ? 'Current Plan' : (subscription?.tier === 'free' ? 'Upgrade' : 'Switch Plan'))}
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

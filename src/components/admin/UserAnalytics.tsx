@@ -231,6 +231,27 @@ const UserAnalytics = () => {
   };
 
   const handleGrantAccess = async (userId: string, tier: string) => {
+    // Determine the new access values
+    let grantedTier: string | null = null;
+    let hasFreeAccess = false;
+
+    if (tier === 'base') {
+      hasFreeAccess = true;
+    } else if (tier === 'pro' || tier === 'enterprise') {
+      grantedTier = tier;
+      hasFreeAccess = false;
+    } else if (tier === 'free') {
+      grantedTier = null;
+      hasFreeAccess = false;
+    }
+
+    // Optimistic update
+    setUsers(prev => prev.map(user =>
+      user.id === userId
+        ? { ...user, granted_tier: grantedTier, has_free_access: hasFreeAccess }
+        : user
+    ));
+
     setUpdatingUsers(prev => new Set(prev.add(userId)));
     try {
       if (tier === 'base') {
@@ -242,6 +263,8 @@ const UserAnalytics = () => {
       }
       toast.success(`Granted ${tier} access to user ${userId}`);
     } catch (error) {
+      // Revert optimistic update on error
+      await fetchAnalytics();
       toast.error('Failed to update access');
     } finally {
       setUpdatingUsers(prev => {
