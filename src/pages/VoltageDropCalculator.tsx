@@ -42,6 +42,19 @@ const VoltageDropCalculatorPage = () => {
     console.log('Subscription data:', subscription);
     console.log('isPro:', isPro, 'tier:', tier, 'isActive:', isActive);
   }, [subscription, isPro, isActive, tier]);
+  const hasAccess = subscription?.tier === 'pro' || subscription?.tier === 'enterprise' || subscription?.id === 'granted-access';
+
+  if (!hasAccess) {
+    return (
+      <Layout>
+        <div className="max-w-6xl mx-auto text-center py-8">
+          <h2 className="text-2xl font-semibold mb-2">Upgrade to Pro to Access This Feature</h2>
+          <p className="text-muted-foreground mb-4">The Voltage Drop Calculator is a premium feature available to Pro and Enterprise subscribers.</p>
+          <Button onClick={() => window.location.href = '/subscription'}>Upgrade Now</Button>
+        </div>
+      </Layout>
+    );
+  }
   const [distance, setDistance] = useState('');
   const [current, setCurrent] = useState('');
   const [wireSize, setWireSize] = useState('');

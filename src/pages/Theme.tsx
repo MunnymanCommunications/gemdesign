@@ -28,7 +28,6 @@ interface UserTheme {
   primary_color: string;
   secondary_color: string;
   accent_color: string;
-  background_color: string;
   text_color: string;
   created_at?: string;
   updated_at?: string;
@@ -39,7 +38,6 @@ interface PresetTheme {
   primary_color: string;
   secondary_color: string;
   accent_color: string;
-  background_color: string;
   text_color: string;
 }
 
@@ -57,7 +55,6 @@ const Theme = () => {
       primary_color: '#8b5cf6',
       secondary_color: '#a855f7',
       accent_color: '#ec4899',
-      background_color: '#ffffff',
       text_color: '#1f2937'
     },
     {
@@ -65,7 +62,6 @@ const Theme = () => {
       primary_color: '#0ea5e9',
       secondary_color: '#0284c7',
       accent_color: '#06b6d4',
-      background_color: '#ffffff',
       text_color: '#1e293b'
     },
     {
@@ -73,7 +69,6 @@ const Theme = () => {
       primary_color: '#10b981',
       secondary_color: '#059669',
       accent_color: '#34d399',
-      background_color: '#ffffff',
       text_color: '#1f2937'
     },
     {
@@ -81,7 +76,6 @@ const Theme = () => {
       primary_color: '#f97316',
       secondary_color: '#ea580c',
       accent_color: '#fb923c',
-      background_color: '#ffffff',
       text_color: '#1f2937'
     },
     {
@@ -89,7 +83,6 @@ const Theme = () => {
       primary_color: '#8b5cf6',
       secondary_color: '#a855f7',
       accent_color: '#ec4899',
-      background_color: '#0f172a',
       text_color: '#f8fafc'
     }
   ];
@@ -105,7 +98,6 @@ const Theme = () => {
       primary_color: preset.primary_color,
       secondary_color: preset.secondary_color,
       accent_color: preset.accent_color,
-      background_color: preset.background_color,
       text_color: preset.text_color,
     };
     setTheme(newTheme);
@@ -194,7 +186,6 @@ const Theme = () => {
       primary_color: '#8b5cf6',
       secondary_color: '#a855f7',
       accent_color: '#ec4899',
-      background_color: '#ffffff',
       text_color: '#1f2937',
       logo_url: undefined,
     };
@@ -366,23 +357,6 @@ const Theme = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="background">Background Color</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="background"
-                        type="color"
-                        value={theme.background_color}
-                        onChange={(e) => handleColorChange('background_color', e.target.value)}
-                        className="w-16 h-10"
-                      />
-                      <Input
-                        value={theme.background_color}
-                        onChange={(e) => handleColorChange('background_color', e.target.value)}
-                        placeholder="#ffffff"
-                      />
-                    </div>
-                  </div>
                 </div>
 {/* Preset Themes */}
               </CardContent>
