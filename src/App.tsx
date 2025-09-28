@@ -59,9 +59,6 @@ const AppContent = () => {
               <Route path="/get-started" element={<GetStarted />} />
               <Route path="/helpful-documents" element={<HelpfulDocuments />} />
               <Route path="/satellite-assessment" element={<SatelliteAssessmentPage />} />
-              <Route path="/voltage-drop-calculator" element={<ProRoute />}>
-                <Route index element={<VoltageDropCalculatorPage />} />
-              </Route>
               <Route path="/security-assessment" element={<ProRoute />}>
                 <Route index element={<SecurityAssessmentPage />} />
               </Route>
