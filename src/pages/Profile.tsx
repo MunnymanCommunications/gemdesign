@@ -503,31 +503,6 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {isAdmin && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Admin Settings</CardTitle>
-              <CardDescription>
-                Manage user access and permissions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium">Free Access</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Grant this user free access to the platform
-                  </p>
-                </div>
-                <Switch
-                  checked={profile.has_free_access}
-                  onCheckedChange={toggleFreeAccess}
-                  disabled={saving}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </Layout>
   );
