@@ -40,6 +40,8 @@ interface AdminSettings {
   platform_assistant_id: string | null;
   platform_prompt: string | null;
   payment_required: boolean;
+  temperature: number;
+  max_tokens: number;
 }
 
 const Admin = () => {
@@ -52,6 +54,8 @@ const [platformApiKey, setPlatformApiKey] = useState('');
 const [stripeConfigured, setStripeConfigured] = useState<boolean | null>(null);
 const [customModel, setCustomModel] = useState('');
 const { isAdmin } = useRoles();
+const [temperature, setTemperature] = useState(0.7);
+const [maxTokens, setMaxTokens] = useState(1500);
 
 useEffect(() => {
   fetchSettings();
@@ -78,6 +82,8 @@ useEffect(() => {
           ...data,
           platform_prompt: data.platform_prompt || null
         });
+        setTemperature(data.temperature || 0.7);
+        setMaxTokens(data.max_tokens || 1500);
       }
     } catch (error) {
       console.error('Error fetching admin settings:', error);
@@ -156,6 +162,8 @@ You can reference uploaded documents to help with business tasks, generate invoi
         platform_assistant_id: settings.platform_assistant_id,
         platform_prompt: settings.platform_prompt,
         payment_required: settings.payment_required,
+        temperature: temperature,
+        max_tokens: maxTokens
       };
 
       // Only include API key if it's been changed
@@ -364,6 +372,32 @@ You can reference uploaded documents to help with business tasks, generate invoi
                   OpenAI Assistant ID for the main chat AI
                 </p>
               </div>
+<div className="space-y-4">
+<div>
+  <Label htmlFor="temperature">Temperature (0.0 - 2.0)</Label>
+  <Input
+    id="temperature"
+    type="number"
+    min="0"
+    max="2"
+    step="0.1"
+    value={temperature}
+    onChange={(e) => setTemperature(parseFloat(e.target.value))}
+  />
+</div>
+<div>
+  <Label htmlFor="maxTokens">Max Tokens</Label>
+  <Input
+    id="maxTokens"
+    type="number"
+    min="100"
+    max="4000"
+    step="100"
+    value={maxTokens}
+    onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+  />
+</div>
+</div>
             </CardContent>
           </Card>
 

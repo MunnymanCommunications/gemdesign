@@ -24,11 +24,13 @@ import HelpfulDocuments from './pages/HelpfulDocuments';
 import BrowserPDFExtractorPage from './pages/BrowserPDFExtractorPage';
 import SatelliteAssessmentPage from './pages/SatelliteAssessment';
 import VoltageDropCalculatorPage from './pages/VoltageDropCalculator';
+import VoltageCalculatorPage from './pages/VoltageCalculatorPage';
 import UpgradePage from './pages/Upgrade';
 import PaymentFailedModal from './components/PaymentFailedModal';
 import { useSubscription } from './hooks/useSubscription';
 import PrivateRoute from './components/PrivateRoute';
 
+import { SubscriptionSync } from "@/components/SubscriptionSync";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
@@ -37,6 +39,7 @@ const AppContent = () => {
 
   return (
     <>
+      <SubscriptionSync />
       <PaymentFailedModal open={showPaymentFailedModal} />
       <BrowserRouter>
         <Routes>
@@ -61,6 +64,7 @@ const AppContent = () => {
                 <Route index element={<VoltageDropCalculatorPage />} />
               </Route>
               <Route path="/security-assessment" element={<ProRoute />}>
+<Route path="/voltage" element={<VoltageDropCalculatorPage />} />
                 <Route index element={<SecurityAssessmentPage />} />
               </Route>
             </Route>
