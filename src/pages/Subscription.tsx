@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Check, X, Crown, Star, Shield, AlertTriangle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { useStripeSync } from '@/hooks/useStripeSync';
 
 interface AdminSettings {
   max_base_documents: number;
@@ -20,6 +21,7 @@ interface AdminSettings {
 }
 
 const Subscription = () => {
+  useStripeSync();
   const { user } = useAuth();
   const { subscription, loading: subLoading } = useSubscription();
   const [documentCount, setDocumentCount] = useState(0);
@@ -111,7 +113,7 @@ const Subscription = () => {
       name: 'Base',
       price: '$49.95/month',
       tier: 'base',
-      priceId: adminSettings?.stripe_price_id_base || null,
+      priceId: 'price_1S9RRS00jf1eOeXQS6thA7bQ',
       description: 'Perfect for getting started',
       icon: Star,
       features: [`${adminSettings?.max_base_documents || 5} Document Uploads`, 'Basic AI Assistant', 'Invoice Generator', 'Email Support'],
@@ -121,7 +123,7 @@ const Subscription = () => {
       name: 'Pro',
       price: '$99.95/month',
       tier: 'pro',
-      priceId: adminSettings?.stripe_price_id_pro || null,
+      priceId: 'price_1S9RRi00jf1eOeXQQKXVtRri',
       description: 'For growing businesses',
       icon: Crown,
       popular: true,

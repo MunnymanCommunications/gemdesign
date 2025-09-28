@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -19,81 +19,81 @@ export const useSubscription = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchSubscription = async () => {
-      if (!user) {
-        setSubscription(null);
+  const fetchSubscription = useCallback(async () => {
+    if (!user) {
+      setSubscription(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Check for granted access first
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('granted_tier')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.granted_tier && profile.granted_tier !== 'free') {
+        setSubscription({
+          id: 'granted-access',
+          tier: profile.granted_tier,
+          max_documents: profile.granted_tier === 'pro' ? 50 : 5,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          status: 'active',
+          stripe_customer_id: null,
+          stripe_subscription_id: null,
+        });
         setLoading(false);
         return;
       }
 
-      setLoading(true);
-      try {
-        // Check for granted access first
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('granted_tier')
-          .eq('id', user.id)
+      // If no granted access, check for a real subscription
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('status', ['trialing', 'active'])
+        .maybeSingle();
+
+      if (error) {
+        setError(error.message);
+        setSubscription(null);
+      } else if (data) {
+        setSubscription(data);
+      } else {
+        // No active subscription, create a free one
+        const { data: freeSub, error: createError } = await supabase
+          .from('user_subscriptions')
+          .insert({
+            user_id: user.id,
+            tier: 'free',
+            max_documents: 2,
+            status: 'active',
+          })
+          .select('*')
           .single();
 
-        if (profile?.granted_tier && profile.granted_tier !== 'free') {
-          setSubscription({
-            id: 'granted-access',
-            tier: profile.granted_tier,
-            max_documents: profile.granted_tier === 'pro' ? 50 : 5,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            status: 'active',
-            stripe_customer_id: null,
-            stripe_subscription_id: null,
-          });
-          setLoading(false);
-          return;
-        }
-
-        // If no granted access, check for a real subscription
-        const { data, error } = await supabase
-          .from('user_subscriptions')
-          .select('*')
-          .eq('user_id', user.id)
-          .in('status', ['trialing', 'active'])
-          .maybeSingle();
-
-        if (error) {
-          setError(error.message);
+        if (createError) {
+          setError(createError.message);
           setSubscription(null);
-        } else if (data) {
-          setSubscription(data);
         } else {
-          // No active subscription, create a free one
-          const { data: freeSub, error: createError } = await supabase
-            .from('user_subscriptions')
-            .insert({
-              user_id: user.id,
-              tier: 'free',
-              max_documents: 2,
-              status: 'active',
-            })
-            .select('*')
-            .single();
-
-          if (createError) {
-            setError(createError.message);
-            setSubscription(null);
-          } else {
-            setSubscription(freeSub);
-          }
+          setSubscription(freeSub);
         }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        setSubscription(null);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setSubscription(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
+  useEffect(() => {
     fetchSubscription();
-  }, [user?.id]);
+  }, [fetchSubscription]);
 
   const isPro = subscription?.tier === 'pro';
   const isEnterprise = subscription?.tier === 'enterprise';
@@ -109,6 +109,7 @@ export const useSubscription = () => {
     isEnterprise,
     isProOrHigher,
     isActive,
-    tier
+    tier,
+    refetch: fetchSubscription
   };
 };

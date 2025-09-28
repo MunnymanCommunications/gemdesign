@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import Layout from '@/components/layout/Layout';
 import SEO from '@/components/seo/SEO';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +36,12 @@ interface VoltageCalculation {
 
 const VoltageDropCalculatorPage = () => {
   const { user } = useAuth();
+  const { subscription, isPro, isActive, tier } = useSubscription();
+
+  useEffect(() => {
+    console.log('Subscription data:', subscription);
+    console.log('isPro:', isPro, 'tier:', tier, 'isActive:', isActive);
+  }, [subscription, isPro, isActive, tier]);
   const [distance, setDistance] = useState('');
   const [current, setCurrent] = useState('');
   const [wireSize, setWireSize] = useState('');
