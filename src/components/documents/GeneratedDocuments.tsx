@@ -11,7 +11,7 @@ import html2canvas from 'html2canvas';
 
 interface GeneratedDocument {
   id: string;
-  document_type: 'proposal' | 'invoice';
+  document_type: 'proposal' | 'invoice' | 'security_assessment';
   title: string;
   content: string;
   client_name: string;
@@ -43,7 +43,7 @@ const GeneratedDocuments = () => {
       // Type assertion to ensure document_type is properly typed
       const typedData = (data || []).map(doc => ({
         ...doc,
-        document_type: doc.document_type as 'proposal' | 'invoice'
+        document_type: doc.document_type as 'proposal' | 'invoice' | 'security_assessment'
       }));
       
       setDocuments(typedData);
@@ -172,8 +172,10 @@ const GeneratedDocuments = () => {
                 <div className="flex items-center gap-3">
                   {doc.document_type === 'proposal' ? (
                     <FileText className="h-8 w-8 text-blue-500" />
-                  ) : (
+                  ) : doc.document_type === 'invoice' ? (
                     <Receipt className="h-8 w-8 text-green-500" />
+                  ) : (
+                    <FileText className="h-8 w-8 text-purple-500" />
                   )}
                   <div>
                     <h4 className="font-medium">{doc.title}</h4>
@@ -189,7 +191,7 @@ const GeneratedDocuments = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant={doc.document_type === 'proposal' ? 'default' : 'secondary'}>
-                    {doc.document_type === 'proposal' ? 'Proposal' : 'Invoice'}
+                    {doc.document_type === 'proposal' ? 'Proposal' : doc.document_type === 'invoice' ? 'Invoice' : 'Security Assessment'}
                   </Badge>
                   <Button
                     variant="ghost"
