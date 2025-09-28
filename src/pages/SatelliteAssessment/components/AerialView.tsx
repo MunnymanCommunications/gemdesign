@@ -55,7 +55,10 @@ const AerialView = React.forwardRef<HTMLDivElement, AerialViewProps>(({
               style={{ left: `${markerCoords.x}%`, top: `${markerCoords.y}%` }}
               aria-hidden="true"
             >
-              <TargetIcon className="w-12 h-12 text-red-500 drop-shadow-lg" />
+              <div className="w-12 h-12 relative">
+                <div className="absolute top-1/2 left-0 w-full h-px bg-red-500 -translate-y-1/2"></div>
+                <div className="absolute top-0 left-1/2 w-px h-full bg-red-500 -translate-x-1/2"></div>
+              </div>
             </div>
         )}
       </div>

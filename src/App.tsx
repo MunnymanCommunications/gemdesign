@@ -24,7 +24,6 @@ import HelpfulDocuments from './pages/HelpfulDocuments';
 import BrowserPDFExtractorPage from './pages/BrowserPDFExtractorPage';
 import SatelliteAssessmentPage from './pages/SatelliteAssessment';
 import VoltageDropCalculatorPage from './pages/VoltageDropCalculator';
-import VoltageCalculatorPage from './pages/VoltageCalculatorPage';
 import UpgradePage from './pages/Upgrade';
 import PaymentFailedModal from './components/PaymentFailedModal';
 import { useSubscription } from './hooks/useSubscription';
@@ -66,8 +65,10 @@ const AppContent = () => {
               <Route path="/security-assessment" element={<ProRoute />}>
                 <Route index element={<SecurityAssessmentPage />} />
               </Route>
+              <Route path="/voltage" element={<ProRoute />}>
+                <Route index element={<VoltageDropCalculatorPage />} />
+              </Route>
             </Route>
-<Route path="/voltage" element={<VoltageDropCalculatorPage />} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

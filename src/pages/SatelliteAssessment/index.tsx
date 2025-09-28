@@ -168,21 +168,6 @@ const SatelliteAssessmentPage: React.FC = () => {
       setSecurityAnalysis(analysis);
       setStep(AnalysisStep.COMPLETE);
 
-      if (user) {
-        const { data, error } = await supabase
-          .from('generated_documents')
-          .insert({
-            user_id: user.id,
-            document_type: 'Satellite Security Assessment',
-            title: location,
-            content: JSON.stringify(analysis),
-            client_name: user.email || 'Unknown',
-          });
-
-        if (error) {
-          console.error('Error saving analysis:', error);
-        }
-      }
 
       if (user) {
         const { data, error } = await supabase
