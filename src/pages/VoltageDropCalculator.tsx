@@ -108,6 +108,7 @@ const CalculatorContent = ({ user, subscription }: { user: any; subscription: an
     if (!user) return;
 
     try {
+      console.log('AI Chat - Fetching last conversation for user:', user.id);
       const { data: conversations, error: convError } = await supabase
         .from('chat_conversations')
         .select('id')
@@ -115,14 +116,19 @@ const CalculatorContent = ({ user, subscription }: { user: any; subscription: an
         .order('updated_at', { ascending: false })
         .limit(1);
 
+      console.log('AI Chat - Conversations query result:', { conversations, convError });
+
       if (convError) throw convError;
 
       if (conversations && conversations.length > 0) {
+        console.log('AI Chat - Fetching messages for conversation:', conversations[0].id);
         const { data: messages, error: msgError } = await supabase
           .from('chat_messages')
           .select('*')
           .eq('conversation_id', conversations[0].id)
           .order('created_at', { ascending: true });
+
+        console.log('AI Chat - Messages query result:', { messages: messages?.length, msgError });
 
         if (msgError) throw msgError;
         
@@ -134,15 +140,18 @@ const CalculatorContent = ({ user, subscription }: { user: any; subscription: an
             created_at: msg.created_at
           }));
           setLastConversation(transformedMessages);
+          console.log('AI Chat - Loaded', transformedMessages.length, 'messages into context');
           toast.success('Last conversation loaded for context');
         } else {
+          console.log('AI Chat - No messages in conversation');
           toast.info('No messages found in the last conversation');
         }
       } else {
+        console.log('AI Chat - No conversations found');
         toast.info('No previous conversations found');
       }
     } catch (error) {
-      console.error('Error fetching last conversation:', error);
+      console.error('AI Chat - Error fetching last conversation:', error);
       toast.error('Failed to load last conversation');
     }
   };
@@ -236,6 +245,9 @@ const CalculatorContent = ({ user, subscription }: { user: any; subscription: an
     setChatMessages(prev => [...prev, newUserMessage]);
 
     try {
+      console.log('AI Chat - Sending message. Last conversation loaded:', lastConversation.length > 0);
+      console.log('AI Chat - Contextual prompt length:', contextualPrompt.length); // Note: contextualPrompt defined below
+
       const conversationHistory = lastConversation.map(msg => ({
         role: msg.role,
         content: msg.content
@@ -252,13 +264,15 @@ ${conversationHistory.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).jo
 
 Current voltage drop calculation context:
 - Distance: ${distance} feet
-- Current: ${current} amps  
+- Current: ${current} amps
 - Wire size: ${wireSize} AWG
 - Material: ${material}
 - System voltage: ${systemVoltage}V
 ${result ? `- Calculated voltage drop: ${result.voltageDrop.toFixed(2)}V (${result.voltageDropPercentage.toFixed(1)}%)` : ''}
 
 User question: ${userMessage}`;
+
+      console.log('AI Chat - Full contextual prompt:', contextualPrompt);
 
       const response = await supabase.functions.invoke('ai-chat', {
         body: {
@@ -282,18 +296,25 @@ User question: ${userMessage}`;
         }
       });
 
+      console.log('AI Chat - Supabase response:', response);
+      console.log('AI Chat - Response error:', response.error);
+      console.log('AI Chat - Response data:', response.data);
+
       if (response.error) throw response.error;
 
       const reader = response.data?.body?.getReader();
       if (reader) {
         setStreamingMessage('');
         let fullResponse = '';
+        let parseErrors = 0;
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
           const chunk = new TextDecoder().decode(value);
+          console.log('AI Chat - Received chunk:', chunk.substring(0, 200) + '...'); // Log first 200 chars
+
           const lines = chunk.split('\n');
 
           for (const line of lines) {
@@ -302,17 +323,27 @@ User question: ${userMessage}`;
               
               try {
                 const parsed = JSON.parse(data);
+                console.log('AI Chat - Parsed data:', parsed);
                 if (parsed.choices?.[0]?.delta?.content) {
                   const content = parsed.choices[0].delta.content;
                   fullResponse += content;
                   setStreamingMessage(fullResponse);
+                  console.log('AI Chat - Appended content:', content);
                 }
               } catch (e) {
-                // Ignore parsing errors for streaming
+                parseErrors++;
+                console.error('AI Chat - Parse error in line:', line, 'Error:', e);
+                // If parsing fails consistently, log the raw data
+                if (parseErrors > 5) {
+                  console.error('AI Chat - Multiple parse errors, possible format mismatch. Raw data sample:', data.substring(0, 500));
+                }
               }
             }
           }
         }
+
+        console.log('AI Chat - Full response built:', fullResponse);
+        console.log('AI Chat - Parse errors count:', parseErrors);
 
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
@@ -322,9 +353,11 @@ User question: ${userMessage}`;
         };
         setChatMessages(prev => [...prev, aiMessage]);
         setStreamingMessage('');
+      } else {
+        console.error('AI Chat - No reader available in response');
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('AI Chat - Full error sending message:', error);
       toast.error('Failed to send message');
     } finally {
       setIsLoading(false);

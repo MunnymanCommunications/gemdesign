@@ -57,10 +57,50 @@ const SatelliteAssessmentModal = ({ isOpen, onClose, onComplete }: SatelliteAsse
     }
   }, [location, aerialImage, markerCoords]);
 
-  const handleComplete = () => {
-    if (securityAnalysis) {
-      onComplete(securityAnalysis);
-      onClose();
+  const handleComplete = async () => {
+    if (securityAnalysis && aerialViewRef.current) {
+      try {
+        console.log('Satellite Assessment - Generating PDF report');
+        
+        // Generate PDF using the report element
+        const { success, blob, error } = await generatePdfReport(
+          aerialViewRef.current,
+          securityAnalysis,
+          `Security Assessment - ${location}`
+        );
+
+        if (success && blob) {
+          // Download the PDF
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Security_Assessment_${new Date().toISOString().split('T')[0]}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          toast.success('PDF report downloaded and saved!');
+          
+          // Pass analysis to parent
+          onComplete(securityAnalysis);
+          onClose();
+        } else {
+          console.error('Satellite Assessment - PDF generation failed:', error);
+          toast.error('PDF generation failed, but analysis saved');
+          
+          // Still pass analysis even if PDF fails
+          onComplete(securityAnalysis);
+          onClose();
+        }
+      } catch (error) {
+        console.error('Satellite Assessment - Error in handleComplete:', error);
+        toast.error('Failed to generate PDF report');
+        
+        // Fallback: just save analysis without PDF
+        onComplete(securityAnalysis);
+        onClose();
+      }
     }
   };
 
@@ -96,10 +136,14 @@ const SatelliteAssessmentModal = ({ isOpen, onClose, onComplete }: SatelliteAsse
           )}
           {step === AnalysisStep.ANALYZING && <LoadingSpinner />}
           {step === AnalysisStep.COMPLETE && securityAnalysis && (
-            <>
+            <div ref={aerialViewRef}>
               <SecurityReport analysis={securityAnalysis} />
-              <Button onClick={handleComplete}>Add to Assessment</Button>
-            </>
+              <div className="flex justify-center mt-6">
+                <Button onClick={handleComplete} className="bg-green-600 hover:bg-green-700">
+                  Download PDF & Add to Assessment
+                </Button>
+              </div>
+            </div>
           )}
           {step === AnalysisStep.ERROR && <ErrorMessage message={error} />}
         </div>

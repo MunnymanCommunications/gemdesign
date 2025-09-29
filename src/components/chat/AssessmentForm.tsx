@@ -85,17 +85,49 @@ const ASSESSMENT_STEPS = [
 ];
 
 const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFormProps) => {
+  const STORAGE_KEY = 'assessment_state';
   const [currentStep, setCurrentStep] = useState(0);
-  const [assessmentData, setAssessmentData] = useState<AssessmentData>({
-    step1: '',
-    step2: '',
-    step3: '',
-    step4: '',
-    step5: '',
-    step6: '',
-    step6Images: [],
-    step7: '',
-    additionalNotes: ''
+  const [assessmentData, setAssessmentData] = useState<AssessmentData>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+        return saved ? JSON.parse(saved) : {
+          step1: '',
+          step2: '',
+          step3: '',
+          step4: '',
+          step5: '',
+          step6: '',
+          step6Images: [],
+          step7: '',
+          additionalNotes: ''
+        };
+      } catch (e) {
+        console.error('Error loading assessment state:', e);
+        return {
+          step1: '',
+          step2: '',
+          step3: '',
+          step4: '',
+          step5: '',
+          step6: '',
+          step6Images: [],
+          step7: '',
+          additionalNotes: ''
+        };
+      }
+    }
+    return {
+      step1: '',
+      step2: '',
+      step3: '',
+      step4: '',
+      step5: '',
+      step6: '',
+      step6Images: [],
+      step7: '',
+      additionalNotes: ''
+    };
   });
   const [clarificationDialog, setClarificationDialog] = useState<ClarificationDialog>({
     isOpen: false,
@@ -106,6 +138,25 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSatelliteModalOpen, setIsSatelliteModalOpen] = useState(false);
   const { user } = useAuth();
+
+  // Save to sessionStorage whenever state changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        // Don't save files to storage, just metadata
+        const serializableData = {
+          ...assessmentData,
+          step6Images: assessmentData.step6Images.map(f => ({ name: f.name, size: f.size, type: f.type }))
+        };
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+          currentStep,
+          assessmentData: serializableData
+        }));
+      } catch (e) {
+        console.error('Error saving assessment state:', e);
+      }
+    }
+  }, [currentStep, assessmentData]);
 
   const progress = ((currentStep + 1) / ASSESSMENT_STEPS.length) * 100;
   const isLastStep = currentStep === ASSESSMENT_STEPS.length - 1;
@@ -144,11 +195,17 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
     setIsSatelliteModalOpen(false);
     toast.success('Satellite analysis added to assessment');
 
+    // Still track usage even without limits
     if (user) {
-      await supabase.from('assessment_usage').insert({
-        user_id: user.id,
-        tool_name: 'satellite_assessment',
-      });
+      try {
+        await supabase.from('assessment_usage').insert({
+          user_id: user.id,
+          tool_name: 'satellite_assessment',
+        });
+        console.log('Satellite Assessment - Usage recorded');
+      } catch (error) {
+        console.error('Satellite Assessment - Failed to record usage:', error);
+      }
     }
   };
 
@@ -158,6 +215,12 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
       return;
     }
 
+    console.log('Satellite Assessment - Launching for user:', user.id);
+    console.log('Satellite Assessment - Skipping usage check as per request to remove limits');
+
+    // Removed usage limit check - allowing unlimited access
+    // TODO: If limits need to be re-enabled, restore the queries below
+    /*
     const { data: usage, error: usageError } = await supabase
       .from('assessment_usage')
       .select('*', { count: 'exact' })
@@ -171,7 +234,11 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
       .eq('tool_name', 'satellite_assessment')
       .single();
 
+    console.log('Satellite Assessment - Usage query:', { usage: usage?.length, usageError });
+    console.log('Satellite Assessment - Limit query:', { limit: limit?.limit, limitError });
+
     if (usageError || limitError) {
+      console.error('Satellite Assessment - Query errors:', { usageError, limitError });
       toast.error('Could not verify usage limits.');
       return;
     }
@@ -180,6 +247,7 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
       toast.error('You have reached your usage limit for this feature.');
       return;
     }
+    */
 
     setIsSatelliteModalOpen(true);
   };

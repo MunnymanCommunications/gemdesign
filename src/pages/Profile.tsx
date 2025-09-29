@@ -214,36 +214,13 @@ const Profile = () => {
 
     setUploadingLogo(true);
     try {
-      // Upload to Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user?.id}-logo.${fileExt}`;
-      const { data, error } = await supabase.storage
-        .from('user-logos')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (error) throw error;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('user-logos')
-        .getPublicUrl(fileName);
-
-      // Update profile with logo_url
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ logo_url: publicUrl })
-        .eq('id', user?.id);
-
-      if (updateError) throw updateError;
-
-      setLogoPreview(publicUrl);
-      setProfile(prev => prev ? { ...prev, logo_url: publicUrl } : null);
-      toast.success('Logo uploaded successfully');
+      console.log('Profile - Logo upload initiated, but requires backend relay. File:', file.name);
+      // TODO: Relay to backend agent for implementation
+      // Currently disabled - backend needs to handle saving and integration with documents
+      toast.info('Logo upload requires backend implementation. Please contact your backend agent to set up the saving system.');
     } catch (error) {
-      console.error('Error uploading logo:', error);
-      toast.error('Failed to upload logo');
+      console.error('Error with logo upload relay:', error);
+      toast.error('Failed to process logo upload');
     } finally {
       setUploadingLogo(false);
       setLogoFile(null);
@@ -521,50 +498,6 @@ const Profile = () => {
           </Card>
         </div>
 
-        {/* Account Security */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Account Security
-            </CardTitle>
-            <CardDescription>
-              Manage your account security and authentication settings
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-medium mb-2">Password</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Last changed: Never (using OAuth)
-                </p>
-                <Button variant="outline" disabled>
-                  <Key className="h-4 w-4 mr-2" />
-                  Change Password
-                </Button>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Password management is handled by your OAuth provider
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-medium mb-2">Two-Factor Authentication</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Add an extra layer of security to your account
-                </p>
-                <Button variant="outline" disabled>
-                  <Shield className="h-4 w-4 mr-2" />
-                  Enable 2FA
-                </Button>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Two-factor authentication coming soon
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Preferences */}
         <Card>
           <CardHeader>
@@ -577,34 +510,12 @@ const Profile = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Email Notifications</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Receive updates about your account activity
-                  </p>
-                </div>
-                <Badge variant="outline">Coming Soon</Badge>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
                   <h4 className="font-medium">Analytics Tracking</h4>
                   <p className="text-sm text-muted-foreground">
                     Help us improve the platform with usage analytics
                   </p>
                 </div>
                 <Badge variant="secondary">Enabled</Badge>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium">Data Export</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Download your data and conversations
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" disabled>
-                  Export Data
-                </Button>
               </div>
             </div>
           </CardContent>
