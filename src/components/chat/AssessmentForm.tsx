@@ -85,50 +85,48 @@ const ASSESSMENT_STEPS = [
 ];
 
 const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFormProps) => {
-  const STORAGE_KEY = 'assessment_state';
+  const STEP_STORAGE_KEY = 'assessment_step';
   const [currentStep, setCurrentStep] = useState(0);
-  const [assessmentData, setAssessmentData] = useState<AssessmentData>(() => {
+  const [assessmentData, setAssessmentData] = useState<AssessmentData>({
+    step1: '',
+    step2: '',
+    step3: '',
+    step4: '',
+    step5: '',
+    step6: '',
+    step6Images: [],
+    step7: '',
+    additionalNotes: '',
+    satelliteAnalysis: undefined
+  });
+
+  // Load current step only
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        const saved = sessionStorage.getItem(STORAGE_KEY);
-        return saved ? JSON.parse(saved) : {
-          step1: '',
-          step2: '',
-          step3: '',
-          step4: '',
-          step5: '',
-          step6: '',
-          step6Images: [],
-          step7: '',
-          additionalNotes: ''
-        };
+        const savedStep = sessionStorage.getItem(STEP_STORAGE_KEY);
+        if (savedStep !== null) {
+          const step = parseInt(savedStep, 10);
+          if (!isNaN(step) && step >= 0 && step <= ASSESSMENT_STEPS.length) {
+            setCurrentStep(step);
+          }
+        }
       } catch (e) {
-        console.error('Error loading assessment state:', e);
-        return {
-          step1: '',
-          step2: '',
-          step3: '',
-          step4: '',
-          step5: '',
-          step6: '',
-          step6Images: [],
-          step7: '',
-          additionalNotes: ''
-        };
+        console.error('Error loading assessment step:', e);
       }
     }
-    return {
-      step1: '',
-      step2: '',
-      step3: '',
-      step4: '',
-      step5: '',
-      step6: '',
-      step6Images: [],
-      step7: '',
-      additionalNotes: ''
-    };
-  });
+  }, []);
+
+  // Save current step only
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem(STEP_STORAGE_KEY, currentStep.toString());
+      } catch (e) {
+        console.error('Error saving assessment step:', e);
+      }
+    }
+  }, [currentStep]);
   const [clarificationDialog, setClarificationDialog] = useState<ClarificationDialog>({
     isOpen: false,
     question: '',
@@ -139,24 +137,7 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
   const [isSatelliteModalOpen, setIsSatelliteModalOpen] = useState(false);
   const { user } = useAuth();
 
-  // Save to sessionStorage whenever state changes
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        // Don't save files to storage, just metadata
-        const serializableData = {
-          ...assessmentData,
-          step6Images: assessmentData.step6Images.map(f => ({ name: f.name, size: f.size, type: f.type }))
-        };
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
-          currentStep,
-          assessmentData: serializableData
-        }));
-      } catch (e) {
-        console.error('Error saving assessment state:', e);
-      }
-    }
-  }, [currentStep, assessmentData]);
+  // No full data save; step only handled above
 
   const progress = ((currentStep + 1) / ASSESSMENT_STEPS.length) * 100;
   const isLastStep = currentStep === ASSESSMENT_STEPS.length - 1;
@@ -299,6 +280,23 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
   const handleSubmit = () => {
     if (isLastStep) {
       onSubmit(assessmentData);
+      // Clear storage on submit
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(STEP_STORAGE_KEY);
+        setCurrentStep(0);
+        setAssessmentData({
+          step1: '',
+          step2: '',
+          step3: '',
+          step4: '',
+          step5: '',
+          step6: '',
+          step6Images: [],
+          step7: '',
+          additionalNotes: '',
+          satelliteAnalysis: undefined
+        });
+      }
     }
   };
 
