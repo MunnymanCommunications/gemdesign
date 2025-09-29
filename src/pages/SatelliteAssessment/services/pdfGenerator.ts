@@ -145,39 +145,45 @@ export const generatePdfReport = async (
   try {
     const session = await supabase.auth.getSession();
     const userId = session.data.session?.user.id;
-    if (!userId) throw new Error('User not authenticated');
     
-    const fileName = `${userId}/${reportTitle.replace(/ /g, '_')}_${new Date().getTime()}.pdf`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('generated_documents')
-      .upload(fileName, pdfBlob, { upsert: true });
+    // Sanitize filename more thoroughly
+    const sanitizedTitle = reportTitle.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').toLowerCase();
+    const fileName = `${userId}/${sanitizedTitle}_${new Date().getTime()}.pdf`;
+    
+    if (userId) {
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('generated_documents')
+        .upload(fileName, pdfBlob, { upsert: true });
 
-    if (uploadError) {
-      throw new Error('Failed to upload report');
-    }
+      if (uploadError) {
+        console.error('Failed to upload PDF to storage:', uploadError);
+      } else {
+        const { data: urlData } = supabase.storage
+          .from('generated_documents')
+          .getPublicUrl(uploadData.path);
 
-    const { data: urlData } = supabase.storage
-      .from('generated_documents')
-      .getPublicUrl(uploadData.path);
+        const { error: dbError } = await supabase
+          .from('generated_documents')
+          .insert({
+            user_id: userId,
+            document_type: 'Satellite Security Assessment',
+            title: reportTitle,
+            content: JSON.stringify(analysis),
+            client_name: session.data.session?.user.email || 'Unknown',
+            file_path: urlData.publicUrl,
+          });
 
-    const { error: dbError } = await supabase
-      .from('generated_documents')
-      .insert({
-        user_id: userId,
-        document_type: 'Satellite Security Assessment',
-        title: reportTitle,
-        content: JSON.stringify(analysis),
-        client_name: session.data.session?.user.email || 'Unknown',
-        file_path: urlData.publicUrl,
-      });
-
-    if (dbError) {
-      throw new Error('Failed to save report metadata');
+        if (dbError) {
+          console.error('Failed to save report metadata to database:', dbError);
+        }
+      }
+    } else {
+      console.warn('User not authenticated, skipping upload and DB insert');
     }
 
     return { success: true, blob: pdfBlob };
   } catch (error) {
-    console.error('PDF upload failed:', error);
-    return { success: false, error, blob: pdfBlob };
+    console.error('PDF generation/upload error:', error);
+    return { success: true, blob: pdfBlob }; // Still return success with blob for local download
   }
 };

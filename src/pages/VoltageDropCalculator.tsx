@@ -245,9 +245,6 @@ const CalculatorContent = ({ user, subscription }: { user: any; subscription: an
     setChatMessages(prev => [...prev, newUserMessage]);
 
     try {
-      console.log('AI Chat - Sending message. Last conversation loaded:', lastConversation.length > 0);
-      console.log('AI Chat - Contextual prompt length:', contextualPrompt.length); // Note: contextualPrompt defined below
-
       const conversationHistory = lastConversation.map(msg => ({
         role: msg.role,
         content: msg.content
@@ -271,6 +268,9 @@ Current voltage drop calculation context:
 ${result ? `- Calculated voltage drop: ${result.voltageDrop.toFixed(2)}V (${result.voltageDropPercentage.toFixed(1)}%)` : ''}
 
 User question: ${userMessage}`;
+
+      console.log('AI Chat - Sending message. Last conversation loaded:', lastConversation.length > 0);
+      console.log('AI Chat - Contextual prompt length:', contextualPrompt.length);
 
       console.log('AI Chat - Full contextual prompt:', contextualPrompt);
 

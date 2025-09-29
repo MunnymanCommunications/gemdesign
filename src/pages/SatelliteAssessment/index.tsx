@@ -42,7 +42,7 @@ const ARE_KEYS_CONFIGURED = import.meta.env?.VITE_API_KEY && import.meta.env?.VI
 
 const SatelliteAssessmentPage: React.FC = () => {
   const { user } = useAuth();
-  const { isPro } = useSubscription();
+  const { subscription, isPro } = useSubscription();
   const navigate = useNavigate();
   const [location, setLocation] = useState('');
   const [aerialImage, setAerialImage] = useState<string | null>(null);
@@ -129,7 +129,7 @@ const SatelliteAssessmentPage: React.FC = () => {
             .update({ usage_count: 0, last_reset_date: new Date().toISOString() })
             .eq('user_id', user.id);
         } else {
-          const limit = isPro ? 50 : 10;
+          const limit = subscription?.id === 'granted-access' ? Infinity : (isPro ? 50 : 10);
           if (data.usage_count >= limit) {
             navigate('/upgrade');
           }
@@ -142,7 +142,7 @@ const SatelliteAssessmentPage: React.FC = () => {
     };
 
     checkUsage();
-  }, [user, isPro, navigate]);
+  }, [user, subscription, isPro, navigate]);
   
   if (!ARE_KEYS_CONFIGURED) {
     return <ApiConfigurationMessage />;
