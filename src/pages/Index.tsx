@@ -157,8 +157,52 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          <Card 
-            className="hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 bg-card border border-border" 
+          <Card
+            className="hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 bg-card border border-border"
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('Navigating to profile');
+              navigate('/profile');
+            }}
+          >
+            <CardHeader>
+              <CardTitle>Profile</CardTitle>
+              <CardDescription>Manage your account settings</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Update your company information, logo, and account preferences.
+              </p>
+              <Button variant="outline" className="w-full">
+                View Profile
+              </Button>
+            </CardContent>
+          </Card>
+        
+          <Card
+            className="hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 bg-card border border-border"
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('Navigating to business-tools');
+              navigate('/business-tools');
+            }}
+          >
+            <CardHeader>
+              <CardTitle>Business Tools</CardTitle>
+              <CardDescription>Generate invoices and proposals</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Create professional invoices, proposals, and other business documents with AI assistance.
+              </p>
+              <Button variant="outline" className="w-full">
+                View Tools
+              </Button>
+            </CardContent>
+          </Card>
+        
+          <Card
+            className="hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 bg-card border border-border"
             onClick={(e) => {
               e.preventDefault();
               console.log('Navigating to subscription');

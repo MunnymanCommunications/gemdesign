@@ -453,6 +453,32 @@ const Chat = () => {
       // Send structured message with images
       await sendMessage(assessmentMessage, structuredData);
       
+      // Generate security assessment document
+      try {
+        const { data: docData, error: docError } = await supabase.functions.invoke('generate-document', {
+          body: {
+            document_type: 'security_assessment',
+            assessment_data: structuredData,
+            user_id: user?.id,
+            conversation_id: currentConversation
+          }
+        });
+        
+        if (docError) {
+          console.error('Document generation error:', docError);
+          toast.error('Assessment completed, but document generation failed');
+        } else if (docData) {
+          toast.success('Security assessment document generated!');
+          // Optionally open document editor or navigate to documents
+          setGeneratedContent(docData.content || 'Document generated successfully');
+          setShowDocumentEditor(true);
+          setDocumentType('Security Report');
+        }
+      } catch (docError) {
+        console.error('Error generating document:', docError);
+        toast.warning('Assessment completed - document generation unavailable');
+      }
+      
       // Switch back to chat mode after submission
       setIsAssessmentMode(false);
       
