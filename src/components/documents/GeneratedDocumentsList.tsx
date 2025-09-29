@@ -8,7 +8,7 @@ import { useGeneratedDocuments } from '@/hooks/useGeneratedDocuments';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageFormatter } from '@/components/chat/MessageFormatter';
+import MessageFormatter from '@/components/chat/MessageFormatter';
 
 interface GeneratedDocument {
   id: string;
