@@ -45,3 +45,25 @@ export function hexToHsl(hex: string): string {
   }
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
+
+const CHAT_STORAGE_KEY = 'chat-state';
+
+export const saveChatState = (state: { currentConversationId: string | null; isAssessmentMode: boolean }) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(state));
+  }
+};
+
+export const loadChatState = (): { currentConversationId: string | null; isAssessmentMode: boolean } | null => {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  }
+  return null;
+};
+
+export const clearChatState = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(CHAT_STORAGE_KEY);
+  }
+};

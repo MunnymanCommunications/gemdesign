@@ -103,7 +103,7 @@ const FileUpload = ({
 
         // Save file metadata to database
         const { error: dbError } = await supabase
-          .from('new_user_documents')
+          .from('user_documents')
           .insert({
             user_id: user.id,
             filename: file.name,

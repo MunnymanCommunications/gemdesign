@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { saveChatState, loadChatState } from '@/lib/utils';
 import Layout from '@/components/layout/Layout';
 import SEO from '@/components/seo/SEO';
 import QuickActions from '@/components/chat/QuickActions';
@@ -76,6 +77,11 @@ const Chat = () => {
 
   useEffect(() => {
     if (user) {
+      const savedState = loadChatState();
+      if (savedState) {
+        setCurrentConversation(savedState.currentConversationId);
+        setIsAssessmentMode(savedState.isAssessmentMode);
+      }
       fetchConversations();
     }
   }, [user]);
@@ -85,6 +91,15 @@ const Chat = () => {
       fetchMessages(currentConversation);
     }
   }, [currentConversation]);
+
+  useEffect(() => {
+    if (user) {
+      saveChatState({
+        currentConversationId: currentConversation,
+        isAssessmentMode
+      });
+    }
+  }, [user, currentConversation, isAssessmentMode]);
 
   useEffect(() => {
     scrollToBottom();

@@ -58,14 +58,14 @@ const SatelliteAssessmentModal = ({ isOpen, onClose, onComplete }: SatelliteAsse
   }, [location, aerialImage, markerCoords]);
 
   const handleComplete = async () => {
-    if (securityAnalysis && aerialViewRef.current) {
+    if (securityAnalysis && aerialImage) {
       try {
         console.log('Satellite Assessment - Generating PDF report');
         
-        // Generate PDF using the report element
+        // Generate PDF using analysis data and image URL
         const { success, blob, error } = await generatePdfReport(
-          aerialViewRef.current,
           securityAnalysis,
+          aerialImage,
           `Security Assessment - ${location}`
         );
 
