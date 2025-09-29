@@ -72,21 +72,17 @@ const DocumentList = ({ refresh }: DocumentListProps) => {
   };
 
   const deleteDocument = async (doc: UserDocument) => {
+    if (!confirm('Are you sure you want to delete this document?')) return;
+
     try {
-      // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from('documents')
-        .remove([doc.file_path]);
+      const { data, error } = await supabase.functions.invoke('delete-user-document', {
+        body: {
+          document_id: doc.id,
+          document_type: 'user_documents'
+        }
+      });
 
-      if (storageError) throw storageError;
-
-      // Delete from database
-      const { error: dbError } = await supabase
-        .from('user_documents')
-        .delete()
-        .eq('id', doc.id);
-
-      if (dbError) throw dbError;
+      if (error) throw error;
 
       setDocuments(prev => prev.filter(d => d.id !== doc.id));
       toast.success('Document deleted successfully');
