@@ -603,6 +603,7 @@ const Chat = () => {
                     <QuickActions
                       onActionSelect={handleActionSelect}
                       activeAction={activeAction}
+                      onQuickAction={handleQuickAction}
                     />
                     <div className="flex gap-2">
                       <Input
@@ -633,6 +634,25 @@ const Chat = () => {
                     </Button>
                   </div>
                 </CardContent>
+              )}
+              {showCompanyForm && (
+                <CompanyInfoForm
+                  open={showCompanyForm}
+                  onSubmit={handleCompanyFormSubmit}
+                  onCancel={() => {
+                    setShowCompanyForm(false);
+                    console.log('Chat - Company form cancelled'); // Debug log
+                  }}
+                />
+              )}
+              {showCompanyForm && (
+                <CompanyInfoForm
+                  onSubmit={handleCompanyFormSubmit}
+                  onCancel={() => {
+                    setShowCompanyForm(false);
+                    console.log('Chat - Company form cancelled'); // Debug log
+                  }}
+                />
               )}
             </Card>
           </div>

@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { User, Mail, Building, Save, Key, Shield } from 'lucide-react';
+import { User, Mail, Building, Save, Key, Shield, Upload } from 'lucide-react';
 import { useRoles } from '@/hooks/useRoles';
 import { Switch } from '@/components/ui/switch';
 
@@ -31,6 +31,7 @@ interface Profile {
   created_at: string;
   updated_at: string;
   has_free_access: boolean;
+  logo_url?: string | null;
 }
 
 const Profile = () => {

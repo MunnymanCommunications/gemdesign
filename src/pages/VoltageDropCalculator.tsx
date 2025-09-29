@@ -38,10 +38,24 @@ const VoltageDropCalculatorPage = () => {
   const { user } = useAuth();
   const { subscription, isPro, isActive, tier } = useSubscription();
 
+  const [distance, setDistance] = useState('');
+  const [current, setCurrent] = useState('');
+  const [wireSize, setWireSize] = useState('');
+  const [material, setMaterial] = useState('copper');
+  const [systemVoltage, setSystemVoltage] = useState('12');
+  const [result, setResult] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [streamingMessage, setStreamingMessage] = useState('');
+  const [lastConversation, setLastConversation] = useState<Message[]>([]);
+  const [calculations, setCalculations] = useState<VoltageCalculation[]>([]);
+
   useEffect(() => {
     console.log('VoltageDropCalculator - Subscription data:', subscription);
     console.log('VoltageDropCalculator - isPro:', isPro, 'tier:', tier, 'isActive:', isActive);
   }, [subscription, isPro, isActive, tier]);
+  
   const hasAccess = subscription?.tier === 'pro' || subscription?.tier === 'enterprise' || subscription?.id === 'granted-access';
   
   console.log('VoltageDropCalculator - hasAccess:', hasAccess, 'user:', user); // Debug log
@@ -57,18 +71,6 @@ const VoltageDropCalculatorPage = () => {
       </Layout>
     );
   }
-  const [distance, setDistance] = useState('');
-  const [current, setCurrent] = useState('');
-  const [wireSize, setWireSize] = useState('');
-  const [material, setMaterial] = useState('copper');
-  const [systemVoltage, setSystemVoltage] = useState('12');
-  const [result, setResult] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [chatMessages, setChatMessages] = useState<Message[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const [streamingMessage, setStreamingMessage] = useState('');
-  const [lastConversation, setLastConversation] = useState<Message[]>([]);
-  const [calculations, setCalculations] = useState<VoltageCalculation[]>([]);
 
   useEffect(() => {
     fetchCalculations();
