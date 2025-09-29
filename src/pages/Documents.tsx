@@ -77,7 +77,7 @@ const Documents = () => {
   const fetchDocumentCount = async () => {
     try {
       const { count, error } = await supabase
-        .from('user_documents')
+        .from('new_user_documents')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user?.id);
 

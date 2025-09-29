@@ -645,15 +645,6 @@ const Chat = () => {
                   }}
                 />
               )}
-              {showCompanyForm && (
-                <CompanyInfoForm
-                  onSubmit={handleCompanyFormSubmit}
-                  onCancel={() => {
-                    setShowCompanyForm(false);
-                    console.log('Chat - Company form cancelled'); // Debug log
-                  }}
-                />
-              )}
             </Card>
           </div>
         </div>

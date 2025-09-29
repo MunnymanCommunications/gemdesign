@@ -34,7 +34,7 @@ const DocumentList = ({ refresh }: DocumentListProps) => {
   const fetchDocuments = async () => {
     try {
       const { data, error } = await supabase
-        .from('user_documents')
+        .from('new_user_documents')
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
@@ -82,7 +82,7 @@ const DocumentList = ({ refresh }: DocumentListProps) => {
 
       // Delete from database
       const { error: dbError } = await supabase
-        .from('user_documents')
+        .from('new_user_documents')
         .delete()
         .eq('id', doc.id);
 
