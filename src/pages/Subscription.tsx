@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { useStripeSync } from '@/hooks/useStripeSync';
 
 interface AdminSettings {
+  max_free_documents: number;
   max_base_documents: number;
   max_pro_documents: number;
   stripe_price_id_base: string | null;
@@ -55,6 +56,7 @@ const Subscription = () => {
       const { data, error } = await supabase.rpc('get_public_pricing_settings');
       if (error) throw error;
       setAdminSettings({
+        max_free_documents: data?.[0]?.max_free_documents || 2,
         max_base_documents: data?.[0]?.max_base_documents || 5,
         max_pro_documents: data?.[0]?.max_pro_documents || 50,
         stripe_price_id_base: data?.[0]?.stripe_price_id_base || null,
@@ -93,6 +95,19 @@ const Subscription = () => {
     }
   };
 
+  const getLimitByTier = (tier: string) => {
+    switch (tier) {
+      case 'free':
+        return adminSettings?.max_free_documents || 2;
+      case 'base':
+        return adminSettings?.max_base_documents || 5;
+      case 'pro':
+        return adminSettings?.max_pro_documents || 50;
+      default:
+        return 2;
+    }
+  };
+
   const plans = [
     {
       name: 'Free',
@@ -101,7 +116,7 @@ const Subscription = () => {
       priceId: null,
       description: 'For personal use and exploration',
       icon: Star,
-      features: ['2 Document Uploads', 'Basic AI Assistant', 'Limited Tool Access'],
+      features: [`${getLimitByTier('free')} Document Uploads`, 'Basic AI Assistant', 'Limited Tool Access'],
       limitations: ['No priority support'],
     },
     {
@@ -111,7 +126,7 @@ const Subscription = () => {
       priceId: 'price_1S9RRS00jf1eOeXQS6thA7bQ',
       description: 'Perfect for getting started',
       icon: Star,
-      features: [`${adminSettings?.max_base_documents || 5} Document Uploads`, 'Basic AI Assistant', 'Invoice Generator', 'Email Support'],
+      features: [`${getLimitByTier('base')} Document Uploads`, 'Basic AI Assistant', 'Invoice Generator', 'Email Support'],
       limitations: ['Limited document processing', 'Basic customization'],
     },
     {
@@ -122,7 +137,7 @@ const Subscription = () => {
       description: 'For growing businesses',
       icon: Crown,
       popular: true,
-      features: [`${adminSettings?.max_pro_documents || 50} Document Uploads`, 'Advanced AI Assistant', 'Full Business Tools Suite', 'Priority Support'],
+      features: [`${getLimitByTier('pro')} Document Uploads`, 'Advanced AI Assistant', 'Full Business Tools Suite', 'Priority Support'],
       limitations: [],
     },
   ];
@@ -131,7 +146,8 @@ const Subscription = () => {
     return <Layout><div className="flex justify-center items-center h-screen">Loading subscription details...</div></Layout>;
   }
 
-  const usagePercentage = subscription ? (documentCount / subscription.max_documents) * 100 : 0;
+  const currentLimit = subscription ? getLimitByTier(subscription.tier) : 2;
+  const usagePercentage = subscription ? (documentCount / currentLimit) * 100 : 0;
 
   return (
     <Layout>
@@ -157,7 +173,7 @@ const Subscription = () => {
               </CardHeader>
               <CardContent>
                 <h4 className="font-medium mb-2">Document Usage</h4>
-                <div className="text-2xl font-bold mb-2">{documentCount} / {subscription.max_documents}</div>
+                <div className="text-2xl font-bold mb-2">{documentCount} / {currentLimit}</div>
                 <Progress value={usagePercentage} className="mb-2" />
               </CardContent>
             </Card>
