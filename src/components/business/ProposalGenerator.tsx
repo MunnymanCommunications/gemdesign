@@ -98,6 +98,7 @@ const ProposalGenerator = () => {
           phone: data.phone || '',
           email: data.email || '',
           website: data.website || '',
+          logo: data.logo_url || '',
         }));
       }
     } catch (error) {

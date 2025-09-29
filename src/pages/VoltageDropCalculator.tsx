@@ -39,10 +39,12 @@ const VoltageDropCalculatorPage = () => {
   const { subscription, isPro, isActive, tier } = useSubscription();
 
   useEffect(() => {
-    console.log('Subscription data:', subscription);
-    console.log('isPro:', isPro, 'tier:', tier, 'isActive:', isActive);
+    console.log('VoltageDropCalculator - Subscription data:', subscription);
+    console.log('VoltageDropCalculator - isPro:', isPro, 'tier:', tier, 'isActive:', isActive);
   }, [subscription, isPro, isActive, tier]);
   const hasAccess = subscription?.tier === 'pro' || subscription?.tier === 'enterprise' || subscription?.id === 'granted-access';
+  
+  console.log('VoltageDropCalculator - hasAccess:', hasAccess, 'user:', user); // Debug log
 
   if (!hasAccess) {
     return (

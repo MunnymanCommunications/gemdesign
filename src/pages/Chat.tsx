@@ -71,6 +71,10 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    console.log('Chat - showCompanyForm changed:', showCompanyForm); // Debug log for state change
+  }, [showCompanyForm]);
+
+  useEffect(() => {
     if (user) {
       fetchConversations();
     }
@@ -377,7 +381,9 @@ const Chat = () => {
   };
 
   const handleNewConversation = () => {
+    console.log('Chat - New Conversation button clicked'); // Debug log
     setShowCompanyForm(true);
+    console.log('Chat - setShowCompanyForm to true'); // Debug log
   };
 
   const handleCompanyFormSubmit = async (companyData: CompanyInfoData) => {

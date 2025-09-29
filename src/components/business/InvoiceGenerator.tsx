@@ -94,6 +94,7 @@ const InvoiceGenerator = () => {
           zip: data.zip_code || '',
           phone: data.phone || '',
           email: data.email || '',
+          logo: data.logo_url || '',
         }));
       }
     } catch (error) {

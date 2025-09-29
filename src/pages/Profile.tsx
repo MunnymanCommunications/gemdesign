@@ -34,27 +34,38 @@ interface Profile {
 }
 
 const Profile = () => {
+  console.log('Profile component rendering - start'); // Debug log
   const { user } = useAuth();
+  console.log('Profile - user:', user); // Debug log
   const { isAdmin } = useRoles();
+  console.log('Profile - isAdmin:', isAdmin); // Debug log
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('Profile useEffect - user changed:', user); // Debug log
     if (user) {
       fetchProfile();
     }
   }, [user]);
 
   const fetchProfile = async () => {
+    console.log('Profile - fetchProfile called'); // Debug log
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user?.id)
         .maybeSingle();
-
+      
+      console.log('Profile - fetch data:', data, 'error:', error); // Debug log
+  
       if (error) {
+        console.log('Profile - fetch error, code:', error.code); // Debug log
         // If profile doesn't exist, create one
         if (error.code === 'PGRST116' || !data) {
           await createProfile();
@@ -62,14 +73,18 @@ const Profile = () => {
           throw error;
         }
       } else if (data) {
+        console.log('Profile - setting profile:', data); // Debug log
         setProfile(data);
+        setLogoPreview(data.logo_url || null);
       } else {
+        console.log('Profile - no data, creating profile'); // Debug log
         await createProfile();
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast.error('Failed to load profile');
     } finally {
+      console.log('Profile - fetch finally, loading false'); // Debug log
       setLoading(false);
     }
   };
@@ -97,6 +112,7 @@ const Profile = () => {
 
       if (error) throw error;
       setProfile(data);
+      setLogoPreview(data.logo_url || null);
     } catch (error) {
       console.error('Error creating profile:', error);
       toast.error('Failed to create profile');
@@ -104,8 +120,9 @@ const Profile = () => {
   };
 
   const updateProfile = async () => {
+    console.log('Profile - updateProfile called'); // Debug log
     if (!profile) return;
-
+  
     setSaving(true);
     try {
       const { error } = await supabase
@@ -120,10 +137,13 @@ const Profile = () => {
           state: profile.state,
           zip_code: profile.zip_code,
           business_type: profile.business_type,
-          tax_id: profile.tax_id
+          tax_id: profile.tax_id,
+          logo_url: profile.logo_url
         })
         .eq('id', user?.id);
-
+      
+      console.log('Profile - update error:', error); // Debug log
+  
       if (error) throw error;
       toast.success('Profile updated successfully');
     } catch (error) {
@@ -187,10 +207,6 @@ const Profile = () => {
       </Layout>
     );
   }
-
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [logoPreview, setLogoPreview] = useState<string | null>(profile.logo_url || null);
 
   const handleLogoUpload = async (file: File) => {
     if (!file) return;
