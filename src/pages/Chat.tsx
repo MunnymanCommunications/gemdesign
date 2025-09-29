@@ -135,9 +135,19 @@ const Chat = () => {
 
   const createNewConversation = async (companyData?: CompanyInfoData): Promise<string | null> => {
     try {
-      const title = companyData 
+      const title = companyData
         ? `${companyData.companyName} - ${companyData.assessmentType.charAt(0).toUpperCase() + companyData.assessmentType.slice(1)} Assessment`
         : 'New Conversation';
+
+      const priorityScore = companyData?.priority || 50;
+      let priorityLevel: 'low' | 'medium' | 'high' = 'medium';
+      if (priorityScore > 80) {
+        priorityLevel = 'high';
+      } else if (priorityScore > 50) {
+        priorityLevel = 'medium';
+      } else {
+        priorityLevel = 'low';
+      }
 
       const { data, error } = await supabase
         .from('chat_conversations')
@@ -146,12 +156,14 @@ const Chat = () => {
           title,
           company_name: companyData?.companyName,
           assessment_type: companyData?.assessmentType || 'general',
-          priority_score: 50,
-          priority_level: 'medium',
+          priority_score: priorityScore,
+          priority_level: priorityLevel,
           assessment_data: companyData ? {
             industry: companyData.industry,
             companySize: companyData.companySize,
-            contactPerson: companyData.contactPerson
+            contactPerson: companyData.contactPerson,
+            timeline: companyData.timeline,
+            dueDate: companyData.dueDate
           } : {}
         })
         .select()
@@ -378,8 +390,8 @@ const Chat = () => {
       setShowCompanyForm(false);
       
       // Send initial context message to AI
-      const contextMessage = `Starting ${companyData.assessmentType} assessment for ${companyData.companyName}. Company details: Industry: ${companyData.industry || 'Not specified'}, Size: ${companyData.companySize || 'Not specified'}, Contact: ${companyData.contactPerson || 'Not specified'}. Please begin the assessment with appropriate questions.`;
-      // await sendMessage(contextMessage, companyData);
+      const contextMessage = `Starting ${companyData.assessmentType} assessment for ${companyData.companyName}. Company details: Industry: ${companyData.industry || 'Not specified'}, Size: ${companyData.companySize || 'Not specified'}, Contact: ${companyData.contactPerson || 'Not specified'}, Timeline: ${companyData.timeline}, Due Date: ${companyData.dueDate || 'Not specified'}. Priority Score: ${companyData.priority}. Please begin the assessment with appropriate questions based on this information.`;
+      await sendMessage(contextMessage, companyData);
     }
   };
 
