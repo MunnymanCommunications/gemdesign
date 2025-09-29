@@ -63,7 +63,7 @@ const [users, setUsers] = useState([]);
 useEffect(() => {
   fetchSettings();
   fetchStripeStatus();
-  fetchHelpfulDocs();
+  loadDocuments();
   loadUsers();
 }, []);
 
