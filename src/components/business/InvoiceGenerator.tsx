@@ -64,6 +64,7 @@ const InvoiceGenerator = () => {
     { id: '1', description: '', quantity: 1, rate: 0, amount: 0 }
   ]);
   const [notes, setNotes] = useState('');
+  const [taxRate, setTaxRate] = useState(0.08);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Load company info from profile
@@ -161,9 +162,39 @@ const InvoiceGenerator = () => {
     return subtotal + tax;
   };
 
-  const generatePDF = () => {
-    // This would integrate with a PDF generation library
-    toast.success('PDF generation feature will be implemented with jsPDF library');
+  const generateInvoice = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-invoice', {
+        body: {
+          invoiceNumber,
+          invoiceDate,
+          dueDate,
+          companyInfo,
+          clientInfo,
+          items: items.filter(item => item.description.trim()),
+          notes,
+          taxRate
+        }
+      });
+
+      if (error) throw error;
+
+      // Assume data.content is the generated content
+      const content = data.content;
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice_${invoiceNumber}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Invoice generated and downloaded');
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      toast.error('Failed to generate invoice');
+    }
   };
 
   const saveTemplate = () => {
@@ -205,9 +236,9 @@ const InvoiceGenerator = () => {
           </Button>
           <Button onClick={loadTemplate} variant="outline">Load Template</Button>
           <Button onClick={saveTemplate} variant="outline">Save Template</Button>
-          <Button onClick={generatePDF}>
+          <Button onClick={generateInvoice}>
             <Download className="h-4 w-4 mr-2" />
-            Download PDF
+            Generate Invoice
           </Button>
         </div>
       </div>
@@ -478,6 +509,20 @@ const InvoiceGenerator = () => {
             ))}
           </div>
 
+          {/* Tax Rate */}
+          <div className="flex justify-between items-center mt-4">
+            <Label htmlFor="taxRate">Tax Rate (%)</Label>
+            <Input
+              id="taxRate"
+              type="number"
+              step="0.01"
+              value={taxRate * 100}
+              onChange={(e) => setTaxRate(Number(e.target.value) / 100)}
+              className="w-24"
+              placeholder="8.0"
+            />
+          </div>
+
           {/* Totals */}
           <div className="mt-8 space-y-2 max-w-sm ml-auto">
             <div className="flex justify-between">
@@ -485,7 +530,7 @@ const InvoiceGenerator = () => {
               <span>${calculateSubtotal().toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
-              <span>Tax (8%):</span>
+              <span>Tax ({(taxRate * 100).toFixed(1)}%):</span>
               <span>${calculateTax(calculateSubtotal()).toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-bold text-lg border-t pt-2">

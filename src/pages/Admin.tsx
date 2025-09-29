@@ -199,7 +199,7 @@ You can reference uploaded documents to help with business tasks, generate invoi
     }
   };
   
-  const fetchHelpfulDocs = async () => {
+  const loadDocuments = async () => {
     try {
       const { data: docs, error } = await supabase.from('helpful_documents').select('*');
       if (error) throw error;
@@ -210,19 +210,24 @@ You can reference uploaded documents to help with business tasks, generate invoi
     }
   };
   
-  const deleteDocument = async (docId: string) => {
-    if (!confirm('Are you sure you want to delete this document?')) return;
-  
+  const handleDeleteDocument = async (documentId: string) => {
     try {
-      const { error } = await supabase.functions.invoke('delete-helpful-document', {
-        body: { document_id: docId }
+      const { data, error } = await supabase.functions.invoke('delete-helpful-document', {
+        body: { document_id: documentId }
       });
+      
       if (error) throw error;
-      setHelpfulDocs(helpfulDocs.filter((doc) => doc.id !== docId));
-      toast.success('Document deleted successfully');
+      
+      toast({ title: "Document deleted successfully" });
+      // Refresh helpful documents list
+      loadDocuments();
     } catch (error) {
-      console.error('Error deleting document:', error);
-      toast.error('Failed to delete document');
+      console.error('Delete error:', error);
+      toast({
+        title: "Error deleting document",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   };
   
@@ -272,15 +277,15 @@ You can reference uploaded documents to help with business tasks, generate invoi
   const getAccessStatus = (user: any) => {
     // Priority: admin_grant > free_access > stripe > none
     if (user.granted_tier && user.granted_tier !== 'base') {
-      return { label: `Granted ${user.granted_tier}`, variant: 'default' };
+      return { label: `Granted ${user.granted_tier}`, variant: 'default' as const };
     }
     if (user.has_free_access) {
-      return { label: 'Granted Base', variant: 'secondary' };
+      return { label: 'Granted Base', variant: 'secondary' as const };
     }
     if (user.subscription?.is_active && user.subscription.source === 'stripe') {
-      return { label: `Stripe ${user.subscription.effective_tier}`, variant: 'outline' };
+      return { label: `Stripe ${user.subscription.effective_tier}`, variant: 'outline' as const };
     }
-    return { label: 'No Access', variant: 'destructive' };
+    return { label: 'No Access', variant: 'destructive' as const };
   };
 
 
@@ -775,19 +780,34 @@ You can reference uploaded documents to help with business tasks, generate invoi
                 <CardDescription>Manage helpful documents</CardDescription>
               </CardHeader>
               <CardContent>
-                <ul>
-                  {helpfulDocs.map((doc) => (
-                    <li key={doc.id} className="flex items-center justify-between">
-                      <span>{doc.file_name}</span>
-                      <Button
-                        variant="destructive"
-                        onClick={() => deleteDocument(doc.id)}
-                      >
-                        Delete
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Filename</TableHead>
+                      <TableHead>Size</TableHead>
+                      <TableHead>Upload Date</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {helpfulDocs.map((doc) => (
+                      <TableRow key={doc.id}>
+                        <TableCell>{doc.filename}</TableCell>
+                        <TableCell>{(doc.file_size / 1024).toFixed(1)} KB</TableCell>
+                        <TableCell>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteDocument(doc.id)}
+                          >
+                            Delete
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>

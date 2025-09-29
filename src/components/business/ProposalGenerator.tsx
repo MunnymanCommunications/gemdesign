@@ -141,63 +141,46 @@ const ProposalGenerator = () => {
     return proposalItems.reduce((sum, item) => sum + item.price, 0);
   };
 
-  const generatePDF = () => {
-    // Create proposal content as text for download
-    const proposalText = `
-PROPOSAL ${proposalNumber}
+  const generateProposal = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-proposal', {
+        body: {
+          proposalNumber,
+          issueDate,
+          validUntil,
+          companyInfo,
+          clientInfo,
+          proposalItems: proposalItems.filter(item => item.service.trim()),
+          projectOverview,
+          terms
+        }
+      });
 
-From: ${companyInfo.name}
-${companyInfo.address}
-Phone: ${companyInfo.phone}
-Email: ${companyInfo.email}
-Website: ${companyInfo.website}
+      if (error) throw error;
 
-To: ${clientInfo.name}
-${clientInfo.email}
-${clientInfo.company}
-${clientInfo.address}
-${clientInfo.phone}
-
-Date: ${issueDate}
-Valid Until: ${validUntil}
-
-PROJECT OVERVIEW:
-${projectOverview}
-
-PROPOSED SERVICES:
-${proposalItems.map((item, index) => `
-${index + 1}. ${item.service}
-   Description: ${item.description}
-   Timeline: ${item.timeline}
-   Price: $${item.price.toFixed(2)}
-`).join('')}
-
-TOTAL: $${calculateTotal().toFixed(2)}
-
-TERMS AND CONDITIONS:
-${terms}
-
-Thank you for considering our proposal. We look forward to working with you.
-
-Best regards,
-${companyInfo.name}
-    `;
-
-    // Create and download as text file
-    const blob = new Blob([proposalText], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Proposal_${proposalNumber}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Success",
-      description: "Proposal downloaded successfully!",
-    });
+      // Assume data.content is the generated content
+      const content = data.content;
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Proposal_${proposalNumber}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({
+        title: "Success",
+        description: "Proposal generated and downloaded",
+      });
+    } catch (error) {
+      console.error('Error generating proposal:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate proposal",
+        variant: "destructive"
+      });
+    }
   };
 
   const saveTemplate = () => {
@@ -525,9 +508,9 @@ ${companyInfo.name}
 
       {/* Actions */}
       <div className="flex gap-4">
-        <Button onClick={generatePDF} className="flex-1">
+        <Button onClick={generateProposal} className="flex-1">
           <Download className="h-4 w-4 mr-2" />
-          Download PDF
+          Generate Proposal
         </Button>
         <Button variant="outline" onClick={emailProposal} className="flex-1">
           <Mail className="h-4 w-4 mr-2" />

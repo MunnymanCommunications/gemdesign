@@ -188,6 +188,61 @@ const Profile = () => {
     );
   }
 
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(profile.logo_url || null);
+
+  const handleLogoUpload = async (file: File) => {
+    if (!file) return;
+
+    setUploadingLogo(true);
+    try {
+      // Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user?.id}-logo.${fileExt}`;
+      const { data, error } = await supabase.storage
+        .from('user-logos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('user-logos')
+        .getPublicUrl(fileName);
+
+      // Update profile with logo_url
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ logo_url: publicUrl })
+        .eq('id', user?.id);
+
+      if (updateError) throw updateError;
+
+      setLogoPreview(publicUrl);
+      setProfile(prev => prev ? { ...prev, logo_url: publicUrl } : null);
+      toast.success('Logo uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      toast.error('Failed to upload logo');
+    } finally {
+      setUploadingLogo(false);
+      setLogoFile(null);
+    }
+  };
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setLogoPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <Layout>
       <SEO
@@ -214,11 +269,19 @@ const Profile = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-center">
-                <Avatar className="w-20 h-20 mx-auto mb-4">
-                  <AvatarFallback className="text-lg">
-                    {getInitials(profile.full_name, profile.email)}
-                  </AvatarFallback>
-                </Avatar>
+                {logoPreview ? (
+                  <img
+                    src={logoPreview}
+                    alt="Company Logo"
+                    className="w-20 h-20 mx-auto mb-4 rounded-full object-cover border-2 border-border"
+                  />
+                ) : (
+                  <Avatar className="w-20 h-20 mx-auto mb-4">
+                    <AvatarFallback className="text-lg">
+                      {getInitials(profile.full_name, profile.email)}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
                 <h3 className="text-lg font-semibold">
                   {profile.full_name || 'No name set'}
                 </h3>
@@ -244,6 +307,58 @@ const Profile = () => {
                   </span>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Logo Upload Section */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Company Logo
+              </CardTitle>
+              <CardDescription>
+                Upload your company logo to use in documents and branding
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col md:flex-row gap-4 items-center">
+                <div className="flex-1">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    disabled={uploadingLogo}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Supported formats: PNG, JPG, GIF. Max size: 2MB
+                  </p>
+                </div>
+                {logoPreview && (
+                  <img
+                    src={logoPreview}
+                    alt="Logo Preview"
+                    className="h-16 w-16 object-contain rounded border"
+                  />
+                )}
+                <Button
+                  onClick={() => logoFile && handleLogoUpload(logoFile)}
+                  disabled={!logoFile || uploadingLogo}
+                  className="w-full md:w-auto"
+                >
+                  {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                </Button>
+              </div>
+              {profile.logo_url && !logoFile && (
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Current Logo:</p>
+                  <img
+                    src={profile.logo_url}
+                    alt="Current Logo"
+                    className="h-20 w-20 mx-auto object-contain rounded border mt-2"
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 
