@@ -19,6 +19,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 const INITIAL_ZOOM = 19;
 const MIN_ZOOM = 17;
@@ -44,12 +53,58 @@ const SatelliteAssessmentPage: React.FC = () => {
   const [markerCoords, setMarkerCoords] = useState<{ x: number, y: number } | null>(null);
   const [scale, setScale] = useState(MIN_SCALE);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
   const [assessmentMode, setAssessmentMode] = useState<AssessmentMode>('exterior');
   const [exteriorInputMode, setExteriorInputMode] = useState<'address' | 'upload'>('address');
   
   // State for the exterior upload form
   const [exteriorUploadLocation, setExteriorUploadLocation] = useState('');
   const [exteriorUploadImage, setExteriorUploadImage] = useState<string | null>(null);
+
+  const STORAGE_KEY = 'satelliteAssessmentState';
+
+  // Load persisted state on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const state = JSON.parse(saved);
+        setLocation(state.location || '');
+        setAerialImage(state.aerialImage || null);
+        setSecurityAnalysis(state.securityAnalysis || null);
+        setStep(state.step || AnalysisStep.INPUT);
+        setZoomLevel(state.zoomLevel || INITIAL_ZOOM);
+        setMarkerCoords(state.markerCoords || null);
+        setScale(state.scale || MIN_SCALE);
+        setAssessmentMode(state.assessmentMode || 'exterior');
+        setExteriorInputMode(state.exteriorInputMode || 'address');
+        setExteriorUploadLocation(state.exteriorUploadLocation || '');
+        setExteriorUploadImage(state.exteriorUploadImage || null);
+      } catch (error) {
+        console.error('Failed to load persisted state:', error);
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  }, []);
+
+  // Persist state changes
+  useEffect(() => {
+    const state = {
+      location,
+      aerialImage,
+      securityAnalysis,
+      step,
+      zoomLevel,
+      markerCoords,
+      scale,
+      assessmentMode,
+      exteriorInputMode,
+      exteriorUploadLocation,
+      exteriorUploadImage,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [location, aerialImage, securityAnalysis, step, zoomLevel, markerCoords, scale, assessmentMode, exteriorInputMode, exteriorUploadLocation, exteriorUploadImage]);
 
   const aerialViewRef = useRef<HTMLDivElement>(null);
 
@@ -168,6 +223,22 @@ const SatelliteAssessmentPage: React.FC = () => {
       setSecurityAnalysis(analysis);
       setStep(AnalysisStep.COMPLETE);
 
+// Save to generated_documents using edge function
+if (user) {
+  const { data, error } = await supabase.functions.invoke('generate-document', {
+    body: {
+      document_type: 'security_assessment',
+      assessment_data: analysis,
+      user_id: user.id,
+      title: `${location} Security Assessment`
+    }
+  });
+  if (error) {
+    console.error('Failed to save assessment:', error);
+  } else {
+    console.log('Assessment saved with ID:', data.document_id);
+  }
+}
 
       if (user) {
         const { data, error } = await supabase
@@ -195,7 +266,13 @@ const SatelliteAssessmentPage: React.FC = () => {
     setError('');
     try {
       const reportTitle = assessmentMode === 'exterior' ? location : 'Interior Security Plan';
-      await generatePdfReport(aerialViewRef.current, securityAnalysis, reportTitle);
+      const result = await generatePdfReport(aerialViewRef.current, securityAnalysis, reportTitle);
+      if (result.success) {
+        setPdfBlob(result.blob);
+        setShowPreview(true);
+      } else {
+        throw new Error(result.error?.message || 'Failed to generate PDF');
+      }
     } catch (err) {
        console.error("Failed to generate PDF:", err);
        const errorMessage = err instanceof Error ? `Failed to generate PDF: ${err.message}` : 'An unknown error occurred during PDF generation.';
@@ -218,6 +295,7 @@ const SatelliteAssessmentPage: React.FC = () => {
     setExteriorUploadLocation('');
     setExteriorUploadImage(null);
     // Don't reset assessmentMode, user might want to do another of the same type
+    localStorage.removeItem(STORAGE_KEY);
   };
 
   const handleZoomIn = () => {
@@ -456,22 +534,75 @@ const SatelliteAssessmentPage: React.FC = () => {
               
               {step === AnalysisStep.COMPLETE && (
                 <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                  <button 
-                    onClick={handleReset} 
+                  <button
+                    onClick={handleReset}
                     className="bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-3 px-8 rounded-full transition-colors text-lg shadow-lg"
                   >
                     Start New Analysis
                   </button>
-                  <button 
-                    onClick={handleGenerateReport} 
+                  <button
+                    onClick={handleGenerateReport}
                     disabled={isGeneratingPdf}
                     className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-wait text-white font-bold py-3 px-8 rounded-full transition-colors text-lg shadow-lg flex items-center justify-center gap-3"
                   >
                     {isGeneratingPdf ? <LoadingSpinner /> : <PrinterIcon className="w-6 h-6"/>}
-                    <span>{isGeneratingPdf ? 'Generating...' : 'Export Report'}</span>
+                    <span>{isGeneratingPdf ? 'Generating...' : 'Preview & Export Report'}</span>
                   </button>
                 </div>
               )}
+
+              <Dialog open={showPreview} onOpenChange={setShowPreview}>
+                <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0">
+                  <DialogHeader className="p-6 border-b">
+                    <DialogTitle>Security Assessment Report Preview</DialogTitle>
+                    <DialogDescription>
+                      Review your generated report before downloading.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex-1 overflow-hidden">
+                    {pdfBlob && (
+                      <iframe
+                        src={URL.createObjectURL(pdfBlob)}
+                        width="100%"
+                        height="100%"
+                        className="border-0"
+                        title="PDF Preview"
+                      />
+                    )}
+                  </div>
+                  <DialogFooter className="p-6 border-t gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowPreview(false);
+                        if (pdfBlob) {
+                          URL.revokeObjectURL(URL.createObjectURL(pdfBlob));
+                        }
+                        setPdfBlob(null);
+                      }}
+                    >
+                      Close
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (pdfBlob) {
+                          const url = URL.createObjectURL(pdfBlob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          const reportTitle = assessmentMode === 'exterior' ? location : 'Interior Security Plan';
+                          a.download = `${reportTitle.replace(/\s+/g, '_')}_Security_Report.pdf`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }
+                        setShowPreview(false);
+                        setPdfBlob(null);
+                      }}
+                    >
+                      Download PDF
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
         </main>

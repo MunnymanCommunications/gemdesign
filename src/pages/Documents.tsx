@@ -7,7 +7,6 @@ import SEO from '@/components/seo/SEO';
 import FileUpload from '@/components/documents/FileUpload';
 import DocumentList from '@/components/documents/DocumentList';
 import GeneratedDocumentsList from '@/components/documents/GeneratedDocumentsList';
-import SecurityReportsList from '@/components/documents/SecurityReportsList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -244,19 +243,8 @@ const Documents = () => {
           </Card>
         </div>
 
-        {/* Generated Documents and Reports with Tabs */}
-        <Tabs defaultValue="generated" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="generated">Generated Documents</TabsTrigger>
-            <TabsTrigger value="reports">Security Reports</TabsTrigger>
-          </TabsList>
-          <TabsContent value="generated" className="mt-4">
-            <GeneratedDocumentsList />
-          </TabsContent>
-          <TabsContent value="reports" className="mt-4">
-            <SecurityReportsList />
-          </TabsContent>
-        </Tabs>
+        {/* Generated Documents */}
+        <GeneratedDocumentsList />
 
         {/* Document List */}
         <DocumentList refresh={refreshCount} />

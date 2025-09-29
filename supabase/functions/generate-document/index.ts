@@ -18,7 +18,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    const { document_type, assessment_data, user_id, conversation_id } = await req.json()
+    const { document_type, assessment_data, user_id, conversation_id, title } = await req.json()
 
     console.log('Generate Document - Input:', { document_type, user_id, hasAssessment: !!assessment_data })
 
@@ -40,28 +40,31 @@ serve(async (req) => {
     const companyName = profile?.company || 'Your Company'
     const contactName = profile?.full_name || 'Contact Name'
     const logoUrl = profile?.logo_url || ''
+  
+    const reportTitle = title || `${companyName} Security Assessment Report`
 
     // Prepare prompt for document generation
     let prompt = ''
     if (document_type === 'security_assessment') {
-      prompt = `Generate a professional security assessment report based on the following assessment data. Use the company name "${companyName}" throughout the document. Structure it with sections: Executive Summary, Assessment Findings, Recommendations, Implementation Plan, and Pricing.
-
-Assessment Data:
-${JSON.stringify(assessment_data, null, 2)}
-
-Key Requirements:
-- Replace any placeholders like {{company_name}} with "${companyName}"
-- Make recommendations specific to the provided data (budget, priorities, site layout, etc.)
-- Include realistic pricing tiers based on the assessment
-- Format as clean Markdown that can be converted to PDF
-- Keep it professional and actionable
-
-Company Information:
-- Company: ${companyName}
-- Contact: ${contactName}
-${logoUrl ? `- Logo URL: ${logoUrl}` : ''}
-
-Output only the Markdown content, no additional explanations.`
+      prompt = `Generate a professional security assessment report titled "${reportTitle}" based on the following assessment data. Use the company name "${companyName}" throughout the document. Structure it with sections: Executive Summary, Assessment Findings, Recommendations, Implementation Plan, and Pricing.
+  
+  Assessment Data:
+  ${JSON.stringify(assessment_data, null, 2)}
+  
+  Key Requirements:
+  - Replace any placeholders like {{company_name}} with "${companyName}"
+  - Make recommendations specific to the provided data (budget, priorities, site layout, etc.)
+  - Include realistic pricing tiers based on the assessment
+  - Format as clean Markdown that can be converted to PDF
+  - Keep it professional and actionable
+  - Title the report "${reportTitle}"
+  
+  Company Information:
+  - Company: ${companyName}
+  - Contact: ${contactName}
+  ${logoUrl ? `- Logo URL: ${logoUrl}` : ''}
+  
+  Output only the Markdown content, no additional explanations.`
     } else {
       throw new Error(`Unsupported document type: ${document_type}`)
     }
@@ -96,21 +99,23 @@ Output only the Markdown content, no additional explanations.`
     generatedContent = generatedContent.replace(/\{\{company_name\}\}/g, companyName)
     generatedContent = generatedContent.replace(/\{\{contact_name\}\}/g, contactName)
 
-    // Save the generated document to Supabase (assuming a 'documents' table exists)
+    // Save the generated document to Supabase generated_documents table
+    const insertData = {
+      user_id,
+      document_type: 'security_assessment',
+      document_category: 'security_reports',
+      title: reportTitle,
+      content: generatedContent,
+      client_name: companyName,
+    };
+  
+    if (conversation_id) {
+      (insertData as any).conversation_id = conversation_id;
+    }
+  
     const { data: savedDoc, error: saveError } = await supabaseClient
-      .from('documents')
-      .insert({
-        user_id,
-        conversation_id,
-        type: document_type,
-        title: `${companyName} - ${document_type.replace('_', ' ').toUpperCase()}`,
-        content: generatedContent,
-        metadata: {
-          assessment_data: assessment_data,
-          company_name: companyName,
-          generated_at: new Date().toISOString()
-        }
-      })
+      .from('generated_documents')
+      .insert(insertData)
       .select()
       .single()
 

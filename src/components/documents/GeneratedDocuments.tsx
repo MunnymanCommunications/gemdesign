@@ -19,6 +19,7 @@ interface GeneratedDocument {
   amount?: number;
   created_at: string;
   user_id: string;
+  file_path?: string | null;
 }
 
 const CATEGORY_LABELS = {
@@ -64,6 +65,19 @@ const GeneratedDocuments = () => {
 
   const deleteDocument = async (id: string) => {
     try {
+      const docToDelete = documents.find(doc => doc.id === id);
+      if (docToDelete?.file_path) {
+        // Delete from storage if file_path exists
+        const { error: storageError } = await supabase.storage
+          .from('generated-documents')
+          .remove([docToDelete.file_path]);
+
+        if (storageError) {
+          console.error('Storage delete error:', storageError);
+          // Don't fail the whole operation if storage delete fails
+        }
+      }
+
       const { error } = await supabase
         .from('generated_documents')
         .delete()
@@ -81,61 +95,84 @@ const GeneratedDocuments = () => {
 
   const downloadDocument = async (doc: GeneratedDocument) => {
     try {
-      // Create a temporary element for PDF generation
-      const element = document.createElement('div');
-      element.innerHTML = doc.content;
-      element.style.width = '800px';
-      element.style.padding = '40px';
-      element.style.fontFamily = 'Arial, sans-serif';
-      element.style.lineHeight = '1.6';
-      element.style.color = '#1f2937';
-      element.style.backgroundColor = 'white';
-      
-      // Add to DOM temporarily
-      element.style.position = 'absolute';
-      element.style.left = '-9999px';
-      document.body.appendChild(element);
-      
-      // Generate canvas from HTML
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true
-      });
-      
-      // Remove temporary element
-      document.body.removeChild(element);
-      
-      // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 295; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      
-      let position = 0;
-      
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-      
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
+      if (doc.file_path) {
+        // Download from storage if file_path exists (for PDFs like security assessments)
+        const { data, error } = await supabase.storage
+          .from('generated-documents')
+          .download(doc.file_path);
+
+        if (error) throw error;
+
+        const url = URL.createObjectURL(data);
+        const a = document.createElement('a');
+        a.href = url;
+        const filename = doc.title ? `${doc.title.replace(/\s+/g, '_')}.pdf` : 'document.pdf';
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success('PDF downloaded successfully!');
+      } else {
+        // Fallback to client-side generation for other documents
+        const element = document.createElement('div');
+        element.innerHTML = doc.content;
+        element.style.width = '800px';
+        element.style.padding = '40px';
+        element.style.fontFamily = 'Arial, sans-serif';
+        element.style.lineHeight = '1.6';
+        element.style.color = '#1f2937';
+        element.style.backgroundColor = 'white';
+        
+        // Add to DOM temporarily
+        element.style.position = 'absolute';
+        element.style.left = '-9999px';
+        document.body.appendChild(element);
+        
+        // Generate canvas from HTML
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true
+        });
+        
+        // Remove temporary element
+        document.body.removeChild(element);
+        
+        // Create PDF
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 295; // A4 height in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        
+        let position = 0;
+        
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
+        
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        
+        // Download PDF
+        const filename = doc.title ? `${doc.title.replace(/\s+/g, '_')}.pdf` : 'document.pdf';
+        pdf.save(filename);
+        toast.success('PDF downloaded successfully!');
       }
-      
-      // Download PDF
-      pdf.save(`${doc.title.replace(/\s+/g, '_')}.pdf`);
-      toast.success('PDF downloaded successfully!');
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF');
+      console.error('Error downloading/generating PDF:', error);
+      toast.error('Failed to download/generate PDF');
     }
   };
 
   const emailDocument = (doc: GeneratedDocument) => {
+    if (doc.file_path) {
+      toast.info('Email functionality not available for PDF documents. Please download and attach manually.');
+      return;
+    }
     const subject = encodeURIComponent(`${doc.document_category === 'proposals' ? 'Proposal' : 'Invoice'}: ${doc.title}`);
     const body = encodeURIComponent(`Dear ${doc.client_name},\n\nPlease find the attached ${doc.document_category}.\n\n${doc.content.replace(/<[^>]*>/g, '')}\n\nBest regards`);
     window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
