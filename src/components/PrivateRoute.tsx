@@ -4,17 +4,18 @@ import { useRoles } from '@/hooks/useRoles';
 
 const PrivateRoute = () => {
   const { subscription, loading: subLoading } = useSubscription();
-  const { isAdmin } = useRoles();
+  const { isAdmin, isModerator, loading: rolesLoading } = useRoles();
 
-  if (subLoading) {
+  if (subLoading || rolesLoading) {
     return <div>Loading...</div>; // Or a spinner component
   }
 
-  if (isAdmin) {
+  const hasAdminOrModAccess = isAdmin || isModerator;
+  if (hasAdminOrModAccess) {
     return <Outlet />;
   }
 
-  const hasActiveSubscription = subscription && subscription.status === 'active';
+  const hasActiveSubscription = subscription && (subscription.status === 'active' || subscription.status === 'trialing');
   return hasActiveSubscription ? <Outlet /> : <Navigate to="/subscription" replace />;
 };
 

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
 
 const GetStarted = () => {
   const navigate = useNavigate();
@@ -95,16 +96,28 @@ const GetStarted = () => {
       return;
     }
     setClaiming(true);
-    const { data, error } = await supabase.functions.invoke('claim-invite', {
-      body: { token },
-    });
-    setClaiming(false);
-    if (error) {
-      toast({ title: 'Invite error', description: error.message, variant: 'destructive' });
-      return;
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-invite-token', {
+        body: { token }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success(`Welcome! You've been granted ${data.role} access${data.subscription_tier ? ` and ${data.subscription_tier} tier` : ''}`);
+        // Refresh user session to get updated permissions
+        window.location.reload();
+      }
+    } catch (error: any) {
+      console.error('Error applying invite token:', error);
+      toast({
+        title: "Invite Token Error",
+        description: error.message || "Failed to apply invite token",
+        variant: "destructive",
+      });
+    } finally {
+      setClaiming(false);
     }
-    toast({ title: 'Access granted', description: `Role: ${data.assignedRole}${data.appliedTier ? ` • Plan: ${data.appliedTier}` : ''}` });
-    navigate('/');
   };
 
   return (

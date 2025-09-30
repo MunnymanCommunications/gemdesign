@@ -19,6 +19,15 @@ interface InviteToken {
   uses: number;
   expires_at: string | null;
   created_at: string;
+  created_by: string;
+  creator?: {
+    email: string;
+    full_name: string;
+  };
+  // Status flags:
+  is_expired: boolean;
+  is_maxed_out: boolean;
+  is_valid: boolean;
 }
 
 const InviteTokenManager = () => {
@@ -38,13 +47,14 @@ const InviteTokenManager = () => {
 
   const fetchTokens = async () => {
     try {
-      const { data, error } = await supabase
-        .from('invite_tokens')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.functions.invoke('list-invite-tokens');
 
       if (error) throw error;
-      setTokens(data || []);
+      if (data?.success) {
+        setTokens(data.tokens || []);
+      } else {
+        setTokens([]);
+      }
     } catch (error) {
       console.error('Error fetching invite tokens:', error);
       toast.error('Failed to load invite tokens');
@@ -56,33 +66,28 @@ const InviteTokenManager = () => {
   const createToken = async () => {
     setCreating(true);
     try {
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + newToken.expires_in_days);
-
-      const { data, error } = await supabase
-        .from('invite_tokens')
-        .insert({
-          token: generateRandomToken(),
+      const { data, error } = await supabase.functions.invoke('create-invite-token', {
+        body: {
           target_role: newToken.target_role as 'admin' | 'moderator' | 'user',
-          subscription_tier: newToken.subscription_tier,
+          subscription_tier: newToken.subscription_tier || null,
           max_uses: newToken.max_uses,
-          expires_at: expiresAt.toISOString()
-        })
-        .select()
-        .single();
+          expires_in_days: newToken.expires_in_days
+        }
+      });
 
       if (error) throw error;
-      
-      setTokens(prev => [data, ...prev]);
-      toast.success('Invite token created successfully');
-      
-      // Reset form
-      setNewToken({
-        target_role: 'admin',
-        subscription_tier: 'enterprise',
-        max_uses: 1,
-        expires_in_days: 7
-      });
+      if (data?.success) {
+        setTokens(prev => [data.token, ...prev]);
+        toast.success('Invite token created successfully');
+        
+        // Reset form
+        setNewToken({
+          target_role: 'admin',
+          subscription_tier: 'enterprise',
+          max_uses: 1,
+          expires_in_days: 7
+        });
+      }
     } catch (error) {
       console.error('Error creating invite token:', error);
       toast.error('Failed to create invite token');
@@ -113,19 +118,19 @@ const InviteTokenManager = () => {
     toast.success('Token copied to clipboard');
   };
 
-  const generateRandomToken = () => {
-    return Array.from(crypto.getRandomValues(new Uint8Array(16)))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-  };
 
-  const isExpired = (expiresAt: string | null) => {
-    if (!expiresAt) return false;
-    return new Date(expiresAt) < new Date();
-  };
-
-  const isUsedUp = (token: InviteToken) => {
-    return token.uses >= token.max_uses;
+  const getStatusBadges = (token: InviteToken) => {
+    const badges = [];
+    if (token.is_expired) {
+      badges.push(<Badge key="expired" variant="destructive">Expired</Badge>);
+    }
+    if (token.is_maxed_out) {
+      badges.push(<Badge key="maxed" variant="destructive">Maxed Out</Badge>);
+    }
+    if (!token.is_valid) {
+      badges.push(<Badge key="invalid" variant="secondary">Invalid</Badge>);
+    }
+    return badges;
   };
 
   if (loading) {
@@ -178,14 +183,15 @@ const InviteTokenManager = () => {
             </div>
             <div>
               <Label htmlFor="tier">Subscription Tier</Label>
-              <Select 
-                value={newToken.subscription_tier || ''} 
+              <Select
+                value={newToken.subscription_tier || ''}
                 onValueChange={(value) => setNewToken(prev => ({ ...prev, subscription_tier: value || null }))}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="None" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="">None</SelectItem>
                   <SelectItem value="base">Base</SelectItem>
                   <SelectItem value="pro">Pro</SelectItem>
                   <SelectItem value="enterprise">Enterprise</SelectItem>
@@ -250,11 +256,11 @@ const InviteTokenManager = () => {
                         <span className="text-sm text-muted-foreground">
                           {token.uses}/{token.max_uses} uses
                         </span>
-                        {isExpired(token.expires_at) && (
-                          <Badge variant="destructive">Expired</Badge>
-                        )}
-                        {isUsedUp(token) && (
-                          <Badge variant="destructive">Used Up</Badge>
+                        {getStatusBadges(token)}
+                        {token.creator && (
+                          <span className="text-xs text-muted-foreground">
+                            by {token.creator.full_name || token.creator.email}
+                          </span>
                         )}
                       </div>
                       <code className="text-sm bg-muted p-1 rounded font-mono break-all">

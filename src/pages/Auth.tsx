@@ -9,9 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 
 const Auth = () => {
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [inviteToken, setInviteToken] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
@@ -21,7 +23,13 @@ const Auth = () => {
     if (user) {
       navigate('/');
     }
-  }, [user, navigate]);
+
+    // Check for invite token in URL params
+    const tokenFromUrl = searchParams.get('token');
+    if (tokenFromUrl) {
+      setInviteToken(tokenFromUrl);
+    }
+  }, [user, navigate, searchParams]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +61,29 @@ const Auth = () => {
     }
   };
 
+  const applyInviteToken = async (token: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-invite-token', {
+        body: { token }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success(`Welcome! You've been granted ${data.role} access${data.subscription_tier ? ` and ${data.subscription_tier} tier` : ''}`);
+        // Refresh user session to get updated permissions
+        window.location.reload();
+      }
+    } catch (error: any) {
+      console.error('Error applying invite token:', error);
+      toast({
+        title: "Invite Token Error",
+        description: error.message || "Failed to apply invite token",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -70,6 +101,13 @@ const Auth = () => {
           title: "Account created!",
           description: "Please check your email to verify your account.",
         });
+
+        // If invite token provided, apply it after signup
+        if (inviteToken.trim()) {
+          await applyInviteToken(inviteToken.trim());
+        } else {
+          navigate('/');
+        }
       }
     } catch (error) {
       toast({
@@ -145,6 +183,7 @@ const Auth = () => {
                     placeholder="Enter your full name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    required
                   />
                 </div>
                 <div className="space-y-2">
@@ -169,9 +208,22 @@ const Auth = () => {
                     required
                   />
                 </div>
-                <Button 
-                  type="submit" 
-                  className="w-full" 
+                <div className="space-y-2">
+                  <Label htmlFor="invite-token">Invite Token (Optional)</Label>
+                  <Input
+                    id="invite-token"
+                    type="text"
+                    placeholder="Enter invite token for special access"
+                    value={inviteToken}
+                    onChange={(e) => setInviteToken(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    If you have an invite token, enter it here to gain admin, moderator, or premium access.
+                  </p>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full"
                   disabled={loading}
                 >
                   {loading ? 'Creating account...' : 'Create Account'}
