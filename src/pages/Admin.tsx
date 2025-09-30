@@ -805,6 +805,7 @@ You can reference uploaded documents to help with business tasks, generate invoi
                           <TableCell className="space-x-2">
                             <Select
                               onValueChange={(value) => {
+                                if (!value) return;
                                 let grantedTier: string | null = null;
                                 let hasFreeAccess = false;
                                 switch (value) {
