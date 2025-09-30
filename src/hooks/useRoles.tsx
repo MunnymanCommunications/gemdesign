@@ -4,28 +4,41 @@ import { supabase } from '../integrations/supabase/client';
 
 export const useRoles = () => {
   const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [roles, setRoles] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
+    const fetchRoles = async () => {
       if (user) {
         const { data, error } = await supabase
           .from('user_roles')
           .select('role')
-          .eq('user_id', user.id)
-          .single();
+          .eq('user_id', user.id);
 
         if (error) {
-          console.error('Error fetching user role:', error);
-          setIsAdmin(false);
+          console.error('Error fetching user roles:', error);
+          setRoles([]);
         } else {
-          setIsAdmin(data.role === 'admin');
+          setRoles(data?.map(r => r.role) || []);
         }
+      } else {
+        setRoles([]);
       }
+      setLoading(false);
     };
 
-    checkAdminStatus();
+    fetchRoles();
   }, [user]);
 
-  return { isAdmin };
+  const isAdmin = roles.includes('admin');
+  const isModerator = roles.includes('moderator');
+  const hasAdminAccess = isAdmin;
+
+  return {
+    roles,
+    isAdmin,
+    isModerator,
+    hasAdminAccess,
+    loading
+  };
 };

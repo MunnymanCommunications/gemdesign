@@ -1,23 +1,22 @@
 import { useSubscription } from '@/hooks/useSubscription';
 import { Navigate, Outlet } from 'react-router-dom';
+import { useRoles } from '@/hooks/useRoles';
 
 const ProRoute = () => {
-  const { subscription, loading } = useSubscription();
+  const { subscription, loading: subLoading } = useSubscription();
+  const { isAdmin, isModerator, loading: rolesLoading } = useRoles();
   
-  console.log('ProRoute - loading:', loading, 'subscription:', subscription); // Debug log
-  
-  if (loading) {
-    console.log('ProRoute - showing loading'); // Debug log
-    return <div>Loading subscription...</div>; // Or a spinner component
+  if (subLoading || rolesLoading) {
+    return <div>Loading...</div>; // Or a spinner component
   }
 
-  const isPro = subscription?.tier === 'pro' || subscription?.tier === 'enterprise';
-  const isGrantedPro = subscription?.id === 'granted-access' && subscription?.tier === 'pro';
-  const hasActiveSubscription = subscription && (subscription.status === 'active' || subscription.status === 'trialing');
-  const hasAccess = isPro || isGrantedPro || hasActiveSubscription;
+  const isProOrEnterprise = subscription?.tier === 'pro' || subscription?.tier === 'enterprise';
+  const isGrantedProOrHigher = subscription?.id === 'granted-access' && (subscription?.tier === 'pro' || subscription?.tier === 'enterprise');
+  const hasProSubscription = subscription && (subscription.status === 'active' || subscription.status === 'trialing') && isProOrEnterprise;
+  const hasAdminOrModAccess = isAdmin || isModerator;
   
-  console.log('ProRoute - isPro:', isPro, 'isGrantedPro:', isGrantedPro, 'hasActiveSubscription:', hasActiveSubscription, 'hasAccess:', hasAccess); // Debug log
-
+  const hasAccess = hasProSubscription || isGrantedProOrHigher || hasAdminOrModAccess;
+  
   return hasAccess ? <Outlet /> : <Navigate to="/subscription" replace />;
 };
 

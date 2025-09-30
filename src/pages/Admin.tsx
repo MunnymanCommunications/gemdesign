@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Settings, Brain, Key, Users, FileText, Save, CreditCard, UserPlus, Activity, MessageCircle } from 'lucide-react';
 import HelpfulDocumentUpload from '@/components/admin/HelpfulDocumentUpload';
@@ -47,6 +48,7 @@ interface AdminSettings {
 
 const Admin = () => {
 const { user } = useAuth();
+const currentUser = user;
 const [settings, setSettings] = useState<AdminSettings | null>(null);
 const [loading, setLoading] = useState(true);
 const [saving, setSaving] = useState(false);
@@ -54,11 +56,12 @@ const [apiKey, setApiKey] = useState('');
 const [platformApiKey, setPlatformApiKey] = useState('');
 const [stripeConfigured, setStripeConfigured] = useState<boolean | null>(null);
 const [customModel, setCustomModel] = useState('');
-const { isAdmin } = useRoles();
+const { isAdmin: currentUserIsAdmin } = useRoles();
 const [temperature, setTemperature] = useState(0.7);
 const [maxTokens, setMaxTokens] = useState(1500);
 const [helpfulDocs, setHelpfulDocs] = useState([]);
 const [users, setUsers] = useState([]);
+const [userRoles, setUserRoles] = useState<{ [key: string]: string[] }>({});
 
 useEffect(() => {
   fetchSettings();
@@ -218,26 +221,38 @@ You can reference uploaded documents to help with business tasks, generate invoi
       
       if (error) throw error;
       
-      toast({ title: "Document deleted successfully" });
+      toast.success("Document deleted successfully");
       // Refresh helpful documents list
       loadDocuments();
     } catch (error) {
       console.error('Delete error:', error);
-      toast({
-        title: "Error deleting document",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error(`Error deleting document: ${error.message}`);
     }
   };
   
   const loadUsers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*, subscription:subscriptions(*)');
-      if (error) throw error;
-      setUsers(data || []);
+      if (profilesError) throw profilesError;
+
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('*');
+      if (rolesError) throw rolesError;
+
+      const rolesMap = rolesData.reduce((acc: { [key: string]: string[] }, role) => {
+        if (!acc[role.user_id]) {
+          acc[role.user_id] = [];
+        }
+        acc[role.user_id].push(role.role);
+        return acc;
+      }, {});
+
+      setUsers(profilesData || []);
+      setUserRoles(rolesMap);
+      console.log('User roles loaded:', rolesMap);
     } catch (error) {
       console.error('Error loading users:', error);
       toast.error('Failed to load users');
@@ -251,7 +266,7 @@ You can reference uploaded documents to help with business tasks, generate invoi
         ? { ...user, granted_tier: grantedTier, has_free_access: hasFreeAccess }
         : user
     ));
-  
+
     try {
       const { error } = await supabase
         .from('profiles')
@@ -260,9 +275,9 @@ You can reference uploaded documents to help with business tasks, generate invoi
           has_free_access: hasFreeAccess  // true for base, false for revoke
         })
         .eq('id', userId);  // ← CRITICAL: Use target userId, not auth.uid()
-  
+
       if (error) throw error;
-  
+
       // Refresh data after success
       await loadUsers();
       toast.success('User access updated successfully');
@@ -273,7 +288,55 @@ You can reference uploaded documents to help with business tasks, generate invoi
       toast.error('Failed to update user access');
     }
   };
-  
+
+  const toggleAdminRole = async (userId: string, isAdmin: boolean) => {
+    try {
+      if (isAdmin) {
+        // Insert admin role
+        const { error: insertError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: userId,
+            role: 'admin'
+          });
+
+        if (insertError) throw insertError;
+      } else {
+        // Delete admin role
+        const { error: deleteError } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', userId)
+          .eq('role', 'admin');
+
+        if (deleteError) throw deleteError;
+      }
+
+      // Optimistically update
+      setUserRoles(prev => {
+        const newRoles = { ...prev };
+        if (!newRoles[userId]) newRoles[userId] = [];
+        if (isAdmin) {
+          if (!newRoles[userId].includes('admin')) {
+            newRoles[userId].push('admin');
+          }
+        } else {
+          newRoles[userId] = newRoles[userId].filter(role => role !== 'admin');
+        }
+        return newRoles;
+      });
+
+      toast.success(isAdmin ? 'Admin role granted' : 'Admin role revoked');
+    } catch (error) {
+      console.error('Error toggling admin role:', error);
+      toast.error('Failed to update admin role');
+      // Refresh on error
+      await loadUsers();
+    }
+  };
+
+
+
   const getAccessStatus = (user: any) => {
     // Priority: admin_grant > free_access > stripe > none
     if (user.granted_tier && user.granted_tier !== 'base') {
@@ -288,8 +351,16 @@ You can reference uploaded documents to help with business tasks, generate invoi
     return { label: 'No Access', variant: 'destructive' as const };
   };
 
+  const getUserRoles = (userId: string) => {
+    return userRoles[userId] || [];
+  };
 
-  if (!isAdmin) {
+  const isUserAdmin = (userId: string) => {
+    return getUserRoles(userId).includes('admin');
+  };
+
+
+  if (!currentUserIsAdmin) {
     return (
       <Layout>
         <div className="max-w-6xl mx-auto">
@@ -703,55 +774,71 @@ You can reference uploaded documents to help with business tasks, generate invoi
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Current Access</TableHead>
+                      <TableHead>Admin</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>{user.full_name || 'N/A'}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant={getAccessStatus(user).variant}>
-                            {getAccessStatus(user).label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="space-x-2">
-                          <Select
-                            onValueChange={(value) => {
-                              let grantedTier: string | null = null;
-                              let hasFreeAccess = false;
-                              switch (value) {
-                                case 'pro':
-                                  grantedTier = 'pro';
-                                  break;
-                                case 'enterprise':
-                                  grantedTier = 'enterprise';
-                                  break;
-                                case 'base':
-                                  hasFreeAccess = true;
-                                  break;
-                                case 'revoke':
-                                  grantedTier = null;
-                                  hasFreeAccess = false;
-                                  break;
-                              }
-                              updateUserAccess(user.id, grantedTier, hasFreeAccess);
-                            }}
-                          >
-                            <SelectTrigger className="w-[180px]">
-                              <SelectValue placeholder="Grant Access" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pro">Grant Pro</SelectItem>
-                              <SelectItem value="enterprise">Grant Enterprise</SelectItem>
-                              <SelectItem value="base">Grant Base Access</SelectItem>
-                              <SelectItem value="revoke">Revoke Access</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {users.map((user) => {
+                      const userIsAdmin = isUserAdmin(user.id);
+                      return (
+                        <TableRow key={user.id}>
+                          <TableCell>{user.full_name || 'N/A'}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            <Badge variant={getAccessStatus(user).variant}>
+                              {getAccessStatus(user).label}
+                            </Badge>
+                            {userIsAdmin && (
+                              <Badge variant="default" className="ml-1">
+                                Admin
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Checkbox
+                              checked={userIsAdmin}
+                              onCheckedChange={(checked) => toggleAdminRole(user.id, !!checked)}
+                              disabled={user.id === currentUser?.id} // Disable for self
+                            />
+                          </TableCell>
+                          <TableCell className="space-x-2">
+                            <Select
+                              onValueChange={(value) => {
+                                let grantedTier: string | null = null;
+                                let hasFreeAccess = false;
+                                switch (value) {
+                                  case 'pro':
+                                    grantedTier = 'pro';
+                                    break;
+                                  case 'enterprise':
+                                    grantedTier = 'enterprise';
+                                    break;
+                                  case 'base':
+                                    hasFreeAccess = true;
+                                    break;
+                                  case 'revoke':
+                                    grantedTier = null;
+                                    hasFreeAccess = false;
+                                    break;
+                                }
+                                updateUserAccess(user.id, grantedTier, hasFreeAccess);
+                              }}
+                            >
+                              <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Grant Access" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pro">Grant Pro</SelectItem>
+                                <SelectItem value="enterprise">Grant Enterprise</SelectItem>
+                                <SelectItem value="base">Grant Base Access</SelectItem>
+                                <SelectItem value="revoke">Revoke Access</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>
