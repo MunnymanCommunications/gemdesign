@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,7 +71,10 @@ const Auth = () => {
       if (error) throw error;
 
       if (data?.success) {
-        toast.success(`Welcome! You've been granted ${data.role} access${data.subscription_tier ? ` and ${data.subscription_tier} tier` : ''}`);
+        toast({
+          title: "Welcome!",
+          description: `You've been granted ${data.role} access${data.subscription_tier ? ` and ${data.subscription_tier} tier` : ''}`,
+        });
         // Refresh user session to get updated permissions
         window.location.reload();
       }
