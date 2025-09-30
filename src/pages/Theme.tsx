@@ -88,7 +88,7 @@ const Theme = () => {
   ];
 
 
-  const handleColorChange = (colorType: keyof UserTheme, value: string) => {
+  const handleColorChange = (colorType: 'primary_color' | 'secondary_color' | 'accent_color' | 'text_color', value: string) => {
     setTheme({ ...theme, [colorType]: value });
   };
 
@@ -152,7 +152,14 @@ const Theme = () => {
         logoUrl = urlData.publicUrl;
       }
 
-      const themeToSave = { ...theme, user_id: user.id, logo_url: logoUrl };
+      const themeToSave = {
+        user_id: user.id,
+        logo_url: logoUrl,
+        primary_color: theme.primary_color,
+        secondary_color: theme.secondary_color,
+        accent_color: theme.accent_color,
+        text_color: theme.text_color,
+      };
       
       const { error } = await supabase
         .from('user_themes')
@@ -181,15 +188,14 @@ const Theme = () => {
   };
 
   const resetToDefault = () => {
-    const defaultTheme = {
-      user_id: user?.id || '',
+    const defaultColors = {
       primary_color: '#8b5cf6',
       secondary_color: '#a855f7',
       accent_color: '#ec4899',
       text_color: '#1f2937',
       logo_url: undefined,
     };
-    setTheme(defaultTheme);
+    setTheme({ ...theme, ...defaultColors });
     setLogoFile(null);
     toast.success('Reset to default theme');
   };

@@ -75,7 +75,7 @@ const Subscription = () => {
     
     // Ensure valid priceId before calling checkout
     if (!priceId || !pricing?.[0]?.stripe_price_id_pro) {
-      toast({ title: "Configuration Error", description: "Pricing not configured" });
+      toast.error('Configuration Error: Pricing not configured');
       return;
     }
 
@@ -86,7 +86,7 @@ const Subscription = () => {
 
     if (error) {
       console.error('Stripe error:', error);
-      toast({ title: "Subscription Error", description: error.message });
+      toast.error(`Subscription Error: ${error.message}`);
       return;
     }
 
@@ -168,7 +168,7 @@ const Subscription = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="h-5 w-5" />
-                  Current Plan: {subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1)}
+                  Current Plan: {subscription.tier ? subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1) : 'Free'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
