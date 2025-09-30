@@ -271,7 +271,7 @@ if (user) {
         setPdfBlob(result.blob);
         setShowPreview(true);
       } else {
-        throw new Error(result.error?.message || 'Failed to generate PDF');
+        throw new Error('Failed to generate PDF');
       }
     } catch (err) {
        console.error("Failed to generate PDF:", err);
@@ -552,14 +552,14 @@ if (user) {
               )}
 
               <Dialog open={showPreview} onOpenChange={setShowPreview}>
-                <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0">
-                  <DialogHeader className="p-6 border-b">
+                <DialogContent className="w-full max-w-7xl h-[80vh] md:h-[90vh] flex flex-col p-0">
+                  <DialogHeader className="p-4 border-b">
                     <DialogTitle>Security Assessment Report Preview</DialogTitle>
                     <DialogDescription>
                       Review your generated report before downloading.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="flex-1 overflow-hidden">
+                  <div className="flex-1 overflow-auto">
                     {pdfBlob && (
                       <iframe
                         src={URL.createObjectURL(pdfBlob)}
@@ -570,7 +570,7 @@ if (user) {
                       />
                     )}
                   </div>
-                  <DialogFooter className="p-6 border-t gap-2">
+                  <DialogFooter className="p-4 border-t gap-2">
                     <Button
                       variant="outline"
                       onClick={() => {
