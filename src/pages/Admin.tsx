@@ -252,7 +252,7 @@ You can reference uploaded documents to help with business tasks, generate invoi
 
       setUsers(profilesData || []);
       setUserRoles(rolesMap);
-      console.log('Loaded user roles:', userRoles);
+      console.log('User roles:', rolesMap);
     } catch (error) {
       console.error('Error loading users:', error);
       toast.error('Failed to load users');
