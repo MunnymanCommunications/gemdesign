@@ -20,58 +20,22 @@ export const useSubscription = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchSubscription = useCallback(async () => {
-    console.log('useSubscription - fetch starting, user:', user); // Debug log
     if (!user) {
-      console.log('useSubscription - no user, setting null'); // Debug log
       setSubscription(null);
       setLoading(false);
       return;
     }
-  
+
     setLoading(true);
     try {
-      // Check for granted access first
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('granted_tier')
-        .eq('id', user.id)
-        .single();
-      
-      console.log('useSubscription - profile granted_tier:', profile?.granted_tier); // Debug log
-  
-      if (profile?.granted_tier && profile.granted_tier !== 'free') {
-        const grantedSub = {
-          id: 'granted-access',
-          tier: profile.granted_tier,
-          max_documents: profile.granted_tier === 'pro' ? 50 : 5,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          status: 'active',
-          stripe_customer_id: null,
-          stripe_subscription_id: null,
-        };
-        console.log('useSubscription - setting granted sub:', grantedSub); // Debug log
-        setSubscription(grantedSub);
-        setLoading(false);
-        return;
-      }
-  
-      // If no granted access, check for a real subscription
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .in('status', ['trialing', 'active'])
-        .maybeSingle();
-      
-      console.log('useSubscription - sub data:', data, 'error:', error); // Debug log
-  
+      const { data, error } = await supabase.rpc('get_user_subscription_status', {
+        p_user_id: user.id
+      });
+
       if (error) {
-        console.log('useSubscription - sub error, setting null'); // Debug log
         setError(error.message);
         setSubscription(null);
       } else if (data) {
-        console.log('useSubscription - setting real sub:', data); // Debug log
         setSubscription(data);
       } else {
         // No active subscription, create a free one
@@ -85,24 +49,18 @@ export const useSubscription = () => {
           })
           .select('*')
           .single();
-        
-        console.log('useSubscription - free sub:', freeSub, 'create error:', createError); // Debug log
-  
+
         if (createError) {
-          console.log('useSubscription - create error, setting null'); // Debug log
           setError(createError.message);
           setSubscription(null);
         } else {
-          console.log('useSubscription - setting free sub:', freeSub); // Debug log
           setSubscription(freeSub);
         }
       }
     } catch (err) {
-      console.log('useSubscription - catch error:', err); // Debug log
       setError(err instanceof Error ? err.message : 'Unknown error');
       setSubscription(null);
     } finally {
-      console.log('useSubscription - finally, loading false'); // Debug log
       setLoading(false);
     }
   }, [user]);
