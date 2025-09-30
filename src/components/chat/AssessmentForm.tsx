@@ -197,40 +197,72 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
     }
 
     console.log('Satellite Assessment - Launching for user:', user.id);
-    console.log('Satellite Assessment - Skipping usage check as per request to remove limits');
 
-    // Removed usage limit check - allowing unlimited access
-    // TODO: If limits need to be re-enabled, restore the queries below
-    /*
-    const { data: usage, error: usageError } = await supabase
-      .from('assessment_usage')
-      .select('*', { count: 'exact' })
-      .eq('user_id', user.id)
-      .eq('tool_name', 'satellite_assessment');
+    try {
+      // Get user's tier from profiles
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('tier')
+        .eq('user_id', user.id)
+        .single();
 
-    const { data: limit, error: limitError } = await supabase
-      .from('usage_limits')
-      .select('limit')
-      .eq('user_id', user.id)
-      .eq('tool_name', 'satellite_assessment')
-      .single();
+      if (profileError || !profile) {
+        console.error('Satellite Assessment - Profile query error:', profileError);
+        toast.error('Could not retrieve user profile.');
+        return;
+      }
 
-    console.log('Satellite Assessment - Usage query:', { usage: usage?.length, usageError });
-    console.log('Satellite Assessment - Limit query:', { limit: limit?.limit, limitError });
+      const tier = profile.tier;
+      console.log('Satellite Assessment - User tier:', tier);
 
-    if (usageError || limitError) {
-      console.error('Satellite Assessment - Query errors:', { usageError, limitError });
-      toast.error('Could not verify usage limits.');
-      return;
+      // Get usage count
+      const { data: usage, error: usageError, count: usageCount } = await supabase
+        .from('assessment_usage')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('tool_name', 'satellite_assessment');
+
+      if (usageError) {
+        console.error('Satellite Assessment - Usage query error:', usageError);
+        toast.error('Could not verify usage.');
+        return;
+      }
+
+      console.log('Satellite Assessment - Usage count:', usageCount);
+
+      // Get limit for tier
+      const { data: limitData, error: limitError } = await supabase
+        .from('usage_limits')
+        .select('limit')
+        .eq('tier', tier)
+        .eq('tool_name', 'satellite_assessment')
+        .single();
+
+      if (limitError || !limitData) {
+        console.error('Satellite Assessment - Limit query error:', limitError);
+        toast.error('Could not retrieve usage limits.');
+        return;
+      }
+
+      let limit = limitData.limit;
+      if (tier === 'pro') {
+        limit = 50;
+        console.log('Satellite Assessment - Overriding limit to 50 for pro user');
+      }
+      console.log('Satellite Assessment - Limit for tier', tier, ':', limit);
+
+      if (usageCount && usageCount >= limit) {
+        toast.error(`You have reached your usage limit of ${limit} assessments for this feature.`);
+        return;
+      }
+
+      setIsSatelliteModalOpen(true);
+    } catch (error) {
+      console.error('Satellite Assessment - Error checking limits:', error);
+      toast.error('An error occurred while checking usage limits.');
+      // Proceed anyway or not? For now, proceed to avoid blocking
+      setIsSatelliteModalOpen(true);
     }
-
-    if (limit && usage && usage.length >= limit.limit) {
-      toast.error('You have reached your usage limit for this feature.');
-      return;
-    }
-    */
-
-    setIsSatelliteModalOpen(true);
   };
 
   const handleNext = () => {
