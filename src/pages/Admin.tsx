@@ -803,9 +803,9 @@ You can reference uploaded documents to help with business tasks, generate invoi
                             />
                           </TableCell>
                           <TableCell className="space-x-2">
-                            <Select
+                            <Select defaultValue="none"
                               onValueChange={(value) => {
-                                if (!value) return;
+                                if (!value || value === 'none') return;
                                 let grantedTier: string | null = null;
                                 let hasFreeAccess = false;
                                 switch (value) {
@@ -830,6 +830,7 @@ You can reference uploaded documents to help with business tasks, generate invoi
                                 <SelectValue placeholder="Grant Access" />
                               </SelectTrigger>
                               <SelectContent>
+                                <SelectItem value="none">No Change</SelectItem>
                                 <SelectItem value="pro">Grant Pro</SelectItem>
                                 <SelectItem value="enterprise">Grant Enterprise</SelectItem>
                                 <SelectItem value="base">Grant Base Access</SelectItem>
