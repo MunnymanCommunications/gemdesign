@@ -22,6 +22,13 @@ interface UserStats {
   last_activity: string | null;
   token_usage: number;
   granted_tier: string | null;
+  has_free_access?: boolean;
+  subscription?: {
+    is_active: boolean;
+    source: string;
+    effective_tier: string;
+    max_documents: number;
+  };
 }
 
 const getAccessStatus = (user: UserStats) => {
@@ -215,66 +222,6 @@ const UserAnalytics = () => {
     return <Badge variant={variants[tier as keyof typeof variants] || 'outline'}>{tier}</Badge>;
   };
 
-  const updateUserAccess = async (userId: string, grantedTier: string | null, hasFreeAccess: boolean) => {
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        granted_tier: grantedTier,
-        has_free_access: hasFreeAccess
-      })
-      .eq('id', userId);
-      
-    if (error) throw error;
-
-    // After update, reload users to get fresh data
-    await fetchAnalytics();
-  };
-
-  const handleGrantAccess = async (userId: string, tier: string) => {
-    // Determine the new access values
-    let grantedTier: string | null = null;
-    let hasFreeAccess = false;
-
-    if (tier === 'base') {
-      hasFreeAccess = true;
-    } else if (tier === 'pro' || tier === 'enterprise') {
-      grantedTier = tier;
-      hasFreeAccess = false;
-    } else if (tier === 'free') {
-      grantedTier = null;
-      hasFreeAccess = false;
-    }
-
-    // Optimistic update
-    setUsers(prev => prev.map(user =>
-      user.id === userId
-        ? { ...user, granted_tier: grantedTier, has_free_access: hasFreeAccess }
-        : user
-    ));
-
-    setUpdatingUsers(prev => new Set(prev.add(userId)));
-    try {
-      if (tier === 'base') {
-        await updateUserAccess(userId, null, true);
-      } else if (tier === 'pro' || tier === 'enterprise') {
-        await updateUserAccess(userId, tier, false);
-      } else if (tier === 'free') {
-        await updateUserAccess(userId, null, false);
-      }
-      toast.success(`Granted ${tier} access to user ${userId}`);
-    } catch (error) {
-      // Revert optimistic update on error
-      await fetchAnalytics();
-      toast.error('Failed to update access');
-    } finally {
-      setUpdatingUsers(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(userId);
-        return newSet;
-      });
-    }
-  };
-
   if (loading) {
     return (
       <Card>
@@ -431,25 +378,15 @@ const UserAnalytics = () => {
                 </div>
 
                 <div className="mt-4 pt-4 border-t">
-                  <h5 className="text-sm font-medium mb-2">Admin Controls</h5>
+                  <h5 className="text-sm font-medium mb-2">Current Access</h5>
                   <div className="flex items-center gap-2">
-                    <Select onValueChange={(value) => handleGrantAccess(user.id, value)} disabled={updatingUsers.has(user.id)}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Grant Access" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="base">Grant Base</SelectItem>
-                        <SelectItem value="pro">Grant Pro</SelectItem>
-                        <SelectItem value="enterprise">Grant Enterprise</SelectItem>
-                        <SelectItem value="free">Revoke Access</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {updatingUsers.has(user.id) ? (
-                      <Badge variant="secondary">Updating...</Badge>
-                    ) : user.granted_tier && (
+                    <Badge variant={getAccessStatus(user).variant}>
+                      {getAccessStatus(user).label}
+                    </Badge>
+                    {user.granted_tier && (
                       <Badge variant="secondary">
                         <Check className="h-3 w-3 mr-1" />
-                        {user.granted_tier} Granted
+                        Last Granted: {user.granted_tier}
                       </Badge>
                     )}
                   </div>

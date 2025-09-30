@@ -807,6 +807,7 @@ You can reference uploaded documents to help with business tasks, generate invoi
                           <TableCell className="space-x-2">
                             <Select defaultValue="none"
                               onValueChange={(value) => {
+                                console.log('Select value change:', value);
                                 if (!value || value === 'none') return;
                                 let grantedTier: string | null = null;
                                 let hasFreeAccess = false;
@@ -829,7 +830,7 @@ You can reference uploaded documents to help with business tasks, generate invoi
                               }}
                             >
                               <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Grant Access" />
+                                <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="none">No Change</SelectItem>

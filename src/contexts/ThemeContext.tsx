@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme as useNextTheme } from 'next-themes';
 import { supabase } from '@/integrations/supabase/client';
 import { hexToHsl } from '@/lib/utils';
 interface UserTheme {
@@ -8,6 +9,8 @@ interface UserTheme {
   secondary_color: string;
   accent_color: string;
   background_color: string;
+  background_color_light: string;
+  background_color_dark: string;
   text_color: string;
 }
 
@@ -22,6 +25,8 @@ const defaultTheme: UserTheme = {
   secondary_color: '#a855f7',
   accent_color: '#ec4899',
   background_color: '#ffffff',
+  background_color_light: '#ffffff',
+  background_color_dark: '#000000',
   text_color: '#1f2937',
 };
 
@@ -35,14 +40,23 @@ export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }): JSX.Element => {
   const { user } = useAuth();
+  const { theme: nextTheme } = useNextTheme();
   const [theme, setTheme] = useState<UserTheme>(defaultTheme);
+
+  const getCurrentBackground = (userTheme: UserTheme) => {
+    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const currentThemeMode = nextTheme === "system" ? systemTheme : nextTheme;
+    return currentThemeMode === "dark"
+      ? userTheme.background_color_dark
+      : userTheme.background_color_light;
+  };
 
   const applyTheme = (themeToApply: UserTheme) => {
     const root = document.documentElement;
     root.style.setProperty('--primary', hexToHsl(themeToApply.primary_color));
     root.style.setProperty('--secondary', hexToHsl(themeToApply.secondary_color));
     root.style.setProperty('--accent', hexToHsl(themeToApply.accent_color));
-    root.style.setProperty('--background', hexToHsl(themeToApply.background_color));
+    root.style.setProperty('--background', hexToHsl(getCurrentBackground(themeToApply)));
     root.style.setProperty('--foreground', hexToHsl(themeToApply.text_color));
 
     const favicon = document.getElementById('favicon') as HTMLLinkElement;
@@ -92,6 +106,12 @@ export const ThemeProvider = ({ children }: { children: ReactNode }): JSX.Elemen
   useEffect(() => {
     loadTheme();
   }, [user]);
+
+  useEffect(() => {
+    if (theme) {
+      applyTheme(theme);
+    }
+  }, [nextTheme, theme]);
 
   const value = {
     theme,
