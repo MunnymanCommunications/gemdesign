@@ -184,14 +184,14 @@ const InviteTokenManager = () => {
             <div>
               <Label htmlFor="tier">Subscription Tier</Label>
               <Select
-                value={newToken.subscription_tier || ''}
-                onValueChange={(value) => setNewToken(prev => ({ ...prev, subscription_tier: value || null }))}
+                value={newToken.subscription_tier || 'none'}
+                onValueChange={(value) => setNewToken(prev => ({ ...prev, subscription_tier: value === 'none' ? null : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="None" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   <SelectItem value="base">Base</SelectItem>
                   <SelectItem value="pro">Pro</SelectItem>
                   <SelectItem value="enterprise">Enterprise</SelectItem>
