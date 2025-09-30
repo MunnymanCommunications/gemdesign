@@ -252,7 +252,7 @@ You can reference uploaded documents to help with business tasks, generate invoi
 
       setUsers(profilesData || []);
       setUserRoles(rolesMap);
-      console.log('User roles loaded:', rolesMap);
+      console.log('Loaded user roles:', userRoles);
     } catch (error) {
       console.error('Error loading users:', error);
       toast.error('Failed to load users');
@@ -326,10 +326,10 @@ You can reference uploaded documents to help with business tasks, generate invoi
         return newRoles;
       });
 
-      toast.success(isAdmin ? 'Admin role granted' : 'Admin role revoked');
+      toast.success(isAdmin ? "Admin role granted" : "Admin role revoked");
     } catch (error) {
       console.error('Error toggling admin role:', error);
-      toast.error('Failed to update admin role');
+      toast.error("Failed to update admin role");
       // Refresh on error
       await loadUsers();
     }
