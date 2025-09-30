@@ -803,7 +803,7 @@ You can reference uploaded documents to help with business tasks, generate invoi
                             />
                           </TableCell>
                           <TableCell className="space-x-2">
-                            <Select
+                            <Select value=""
                               onValueChange={(value) => {
                                 if (!value) return;
                                 let grantedTier: string | null = null;
