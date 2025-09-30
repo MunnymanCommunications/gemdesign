@@ -461,6 +461,7 @@ You can reference uploaded documents to help with business tasks, generate invoi
                 <Select 
                   value={settings.ai_model === 'custom' || !['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo', 'gpt-5-mini-2025-08-07', 'gpt-5-2025-08-07', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'gemini-pro'].includes(settings.ai_model) ? 'custom' : settings.ai_model}
                   onValueChange={(value) => {
+                    if (!value) return;
                     if (value === 'custom') {
                       setCustomModel(settings.ai_model);
                     } else {
@@ -781,6 +782,7 @@ You can reference uploaded documents to help with business tasks, generate invoi
                   <TableBody>
                     {users.map((user) => {
                       const userIsAdmin = isUserAdmin(user.id);
+                      console.log('Rendering user:', user.id, 'isAdmin:', userIsAdmin);
                       return (
                         <TableRow key={user.id}>
                           <TableCell>{user.full_name || 'N/A'}</TableCell>
