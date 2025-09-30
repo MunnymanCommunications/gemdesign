@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Plus, Trash2, Download, Upload } from 'lucide-react';
+import jsPDF from 'jspdf';
 
 interface InvoiceItem {
   id: string;
@@ -85,6 +86,7 @@ const InvoiceGenerator = () => {
       if (error) throw error;
       
       if (data) {
+        const logoUrl = data.logo_url ? supabase.storage.from('logos').getPublicUrl(data.logo_url).data.publicUrl : '';
         setCompanyInfo(prev => ({
           ...prev,
           name: data.company || '',
@@ -94,7 +96,7 @@ const InvoiceGenerator = () => {
           zip: data.zip_code || '',
           phone: data.phone || '',
           email: data.email || '',
-          logo: data.logo_url || '',
+          logo: logoUrl,
         }));
       }
     } catch (error) {
@@ -154,7 +156,7 @@ const InvoiceGenerator = () => {
   };
 
   const calculateTax = (subtotal: number) => {
-    return subtotal * 0.08; // 8% tax rate - can be made configurable
+    return subtotal * taxRate;
   };
 
   const calculateTotal = () => {
@@ -165,36 +167,122 @@ const InvoiceGenerator = () => {
 
   const generateInvoice = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('generate-invoice', {
-        body: {
-          invoiceNumber,
-          invoiceDate,
-          dueDate,
-          companyInfo,
-          clientInfo,
-          items: items.filter(item => item.description.trim()),
-          notes,
-          taxRate
+      const doc = new jsPDF();
+      let yPosition = 20;
+
+      // Add logo if available
+      if (companyInfo.logo) {
+        try {
+          // For simplicity, assuming the logo URL is directly usable; in production, handle image loading if needed
+          doc.addImage(companyInfo.logo, 'PNG', 15, yPosition, 30, 15);
+        } catch (imgError) {
+          console.warn('Could not add logo to PDF:', imgError);
+        }
+        yPosition += 20;
+      }
+
+      // Company information
+      doc.setFontSize(16);
+      doc.text(companyInfo.name, 50, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      doc.text(companyInfo.address, 50, yPosition);
+      yPosition += 7;
+      doc.text(`${companyInfo.city}, ${companyInfo.state} ${companyInfo.zip}`, 50, yPosition);
+      yPosition += 7;
+      doc.text(companyInfo.phone, 50, yPosition);
+      yPosition += 7;
+      doc.text(companyInfo.email, 50, yPosition);
+      yPosition += 15;
+
+      // Invoice details
+      doc.setFontSize(12);
+      doc.text(`Invoice #${invoiceNumber}`, 140, 30);
+      doc.text(`Date: ${invoiceDate}`, 140, 40);
+      const due = dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      doc.text(`Due Date: ${due}`, 140, 50);
+
+      // Bill To
+      yPosition = 80;
+      doc.setFontSize(14);
+      doc.text('Bill To:', 15, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      doc.text(clientInfo.name, 15, yPosition);
+      yPosition += 7;
+      doc.text(`${clientInfo.address}, ${clientInfo.city}, ${clientInfo.state} ${clientInfo.zip}`, 15, yPosition);
+      yPosition += 7;
+      doc.text(clientInfo.email, 15, yPosition);
+      yPosition += 15;
+
+      // Line items header
+      doc.setFontSize(12);
+      doc.text('Description', 15, yPosition);
+      doc.text('Qty', 90, yPosition);
+      doc.text('Rate', 110, yPosition);
+      doc.text('Amount', 140, yPosition);
+      yPosition += 10;
+
+      // Line items
+      const filteredItems = items.filter(item => item.description.trim());
+      let subtotal = 0;
+      filteredItems.forEach(item => {
+        doc.setFontSize(10);
+        const descLines = doc.splitTextToSize(item.description, 75);
+        doc.text(descLines, 15, yPosition);
+        
+        doc.text(item.quantity.toString(), 90, yPosition);
+        doc.text(`$${item.rate.toFixed(2)}`, 110, yPosition);
+        doc.text(`$${item.amount.toFixed(2)}`, 140, yPosition);
+        
+        subtotal += item.amount;
+        yPosition += 10;
+        
+        if (yPosition > 250 && filteredItems.indexOf(item) < filteredItems.length - 1) {
+          doc.addPage();
+          yPosition = 20;
         }
       });
 
-      if (error) throw error;
+      // Totals
+      yPosition += 10;
+      const tax = subtotal * taxRate;
+      const total = subtotal + tax;
 
-      // Assume data.content is the generated content
-      const content = data.content;
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Invoice_${invoiceNumber}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success('Invoice generated and downloaded');
+      doc.setFontSize(12);
+      doc.text(`Subtotal: $${subtotal.toFixed(2)}`, 110, yPosition, { align: 'right' });
+      yPosition += 10;
+      doc.text(`Tax (${(taxRate * 100).toFixed(1)}%): $${tax.toFixed(2)}`, 110, yPosition, { align: 'right' });
+      yPosition += 10;
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Total: $${total.toFixed(2)}`, 110, yPosition, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+
+      // Notes
+      if (notes.trim()) {
+        yPosition += 20;
+        doc.setFontSize(12);
+        doc.text('Notes:', 15, yPosition);
+        yPosition += 10;
+        doc.setFontSize(10);
+        const noteLines = doc.splitTextToSize(notes, 180);
+        noteLines.forEach(line => {
+          doc.text(line, 15, yPosition);
+          yPosition += 7;
+          if (yPosition > 280) {
+            doc.addPage();
+            yPosition = 20;
+          }
+        });
+      }
+
+      doc.save(`Invoice_${invoiceNumber}.pdf`);
+      toast.success('PDF Invoice generated and downloaded');
     } catch (error) {
-      console.error('Error generating invoice:', error);
-      toast.error('Failed to generate invoice');
+      console.error('Error generating PDF invoice:', error);
+      toast.error('Failed to generate PDF invoice');
     }
   };
 
@@ -239,7 +327,7 @@ const InvoiceGenerator = () => {
           <Button onClick={saveTemplate} variant="outline">Save Template</Button>
           <Button onClick={generateInvoice}>
             <Download className="h-4 w-4 mr-2" />
-            Generate Invoice
+            Generate PDF Invoice
           </Button>
         </div>
       </div>
