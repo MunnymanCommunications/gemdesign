@@ -37,11 +37,11 @@ interface VoltageCalculation {
 
 const VoltageDropCalculatorPage = () => {
   const { user } = useAuth();
-  const { subscription, isPro, isActive, tier } = useSubscription();
+  const { subscription, isPro, isActive, tier, isProOrHigher } = useSubscription();
 
-  const hasAccess = subscription?.tier === 'pro' || subscription?.tier === 'enterprise' || subscription?.id === 'granted-access';
+  const hasAccess = isProOrHigher || subscription?.id === 'granted-access';
   
-  console.log('VoltageDropCalculator - hasAccess:', hasAccess, 'user:', user); // Debug log
+  console.log('VoltageDropCalculator - hasAccess:', hasAccess, 'isProOrHigher:', isProOrHigher, 'subscription:', subscription); // Debug log
 
   if (!hasAccess) {
     return (
