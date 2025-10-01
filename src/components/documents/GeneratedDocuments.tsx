@@ -69,7 +69,7 @@ const GeneratedDocuments = () => {
       if (docToDelete?.file_path) {
         // Delete from storage if file_path exists
         const { error: storageError } = await supabase.storage
-          .from('generated-documents')
+          .from('generated_documents')
           .remove([docToDelete.file_path]);
 
         if (storageError) {
@@ -98,7 +98,7 @@ const GeneratedDocuments = () => {
       if (doc.file_path) {
         // Download from storage if file_path exists (for PDFs like security assessments)
         const { data, error } = await supabase.storage
-          .from('generated-documents')
+          .from('generated_documents')
           .download(doc.file_path);
 
         if (error) throw error;

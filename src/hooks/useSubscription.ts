@@ -76,13 +76,26 @@ export const useSubscription = () => {
   useEffect(() => {
     fetchSubscription();
   
-    // Periodic sync
-    const interval = setInterval(() => {
-      console.log('useSubscription: Interval sync call');
-      fetchSubscription();
-    }, 60000); // Every minute
+    // Sync on visibility change (when tab becomes active)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('useSubscription: Tab visible, syncing subscription');
+        fetchSubscription();
+      }
+    };
   
-    return () => clearInterval(interval);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+  
+    // Optional longer interval sync (every 5 minutes)
+    const interval = setInterval(() => {
+      console.log('useSubscription: Long interval sync call');
+      fetchSubscription();
+    }, 300000); // Every 5 minutes
+  
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
+    };
   }, [fetchSubscription]);
 
   const effectiveTier = subscription?.effective_tier;

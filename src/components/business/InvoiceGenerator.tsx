@@ -327,7 +327,7 @@ const InvoiceGenerator = () => {
   
       // Upload to Supabase storage
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('generated-documents')
+        .from('generated_documents')
         .upload(fileName, pdfBlob, {
           contentType: 'application/pdf',
           upsert: false
