@@ -1,24 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import Layout from '@/components/layout/Layout';
 import SEO from '@/components/seo/SEO';
 import FileUpload from '@/components/documents/FileUpload';
 import DocumentList from '@/components/documents/DocumentList';
 import GeneratedDocumentsList from '@/components/documents/GeneratedDocumentsList';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { FileText, Upload, Shield } from 'lucide-react';
 
-
 const Documents = () => {
   const { user } = useAuth();
-  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const { subscription, refetch } = useSubscription();
   const [documentCount, setDocumentCount] = useState(0);
   const [refreshCount, setRefreshCount] = useState(0);
   const [searchParams] = useSearchParams();
@@ -28,67 +26,15 @@ const Documents = () => {
     if (searchParams.get('session_id')) {
       toast.success('Payment successful! Your subscription has been upgraded.');
       navigate('/documents', { replace: true });
+      refetch();
     }
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, refetch]);
 
   useEffect(() => {
     if (user) {
-      fetchSubscription();
       fetchDocumentCount();
     }
   }, [user]);
-
-  const fetchSubscription = async () => {
-    try {
-      const { data, error } = await supabase.rpc('get_user_subscription_status', {
-        p_user_id: user?.id
-      });
-
-      if (error) throw error;
-      
-      if (data) {
-        const effectiveSub = {
-          tier: data.effective_tier,
-          max_documents: data.max_documents
-        };
-        setSubscription(effectiveSub);
-      } else {
-        // No subscription, create free one
-        const { data: freeSub, error: createError } = await supabase
-          .from('user_subscriptions')
-          .insert({
-            user_id: user?.id,
-            tier: 'free',
-            max_documents: 2,
-            status: 'active',
-            source: 'free'
-          })
-          .select()
-          .single();
-        
-        if (createError) throw createError;
-        
-        // Refetch RPC to get computed values
-        const { data: newData, error: rpcError } = await supabase.rpc('get_user_subscription_status', {
-          p_user_id: user?.id
-        });
-        
-        if (rpcError) throw rpcError;
-        
-        const effectiveSub = {
-          tier: newData.effective_tier,
-          max_documents: newData.max_documents
-        };
-        setSubscription(effectiveSub);
-      }
-    } catch (error) {
-      console.error('Error fetching subscription:', error);
-      toast.error('Failed to load subscription details');
-      setSubscription({ tier: 'free', max_documents: 2 });
-      setSubscription({ tier: 'free', max_documents: 2 });
-      setSubscription({ tier: 'free', max_documents: 2 });
-    }
-  };
 
   const fetchDocumentCount = async () => {
     try {
@@ -149,10 +95,10 @@ const Documents = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold capitalize">
-                {subscription?.tier || 'Loading...'}
+                {subscription?.effective_tier || 'Loading...'}
               </div>
               <Badge variant="secondary" className="mt-2">
-                {subscription?.tier === 'pro' ? 'Professional' : 'Basic'}
+                {subscription?.effective_tier === 'pro' ? 'Professional' : 'Basic'}
               </Badge>
             </CardContent>
           </Card>
