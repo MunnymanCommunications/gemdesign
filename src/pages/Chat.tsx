@@ -79,8 +79,34 @@ const Chat = () => {
     if (user) {
       const savedState = loadChatState();
       if (savedState) {
-        setCurrentConversation(savedState.currentConversationId);
-        setIsAssessmentMode(savedState.isAssessmentMode);
+        const { currentConversationId, isAssessmentMode } = savedState;
+        if (currentConversationId) {
+          // Validate if the saved conversation still exists and belongs to user
+          supabase
+            .from('chat_conversations')
+            .select('id')
+            .eq('id', currentConversationId)
+            .eq('user_id', user.id)
+            .single()
+            .then(({ data, error }) => {
+              if (data && !error) {
+                setCurrentConversation(currentConversationId);
+              } else {
+                // Invalid conversation, clear from localStorage
+                localStorage.removeItem('chatState');
+                setCurrentConversation(null);
+                toast.warning('Previous conversation no longer available. Starting fresh.');
+              }
+            })
+            .catch(err => {
+              console.error('Error validating saved conversation:', err);
+              localStorage.removeItem('chatState');
+              setCurrentConversation(null);
+            });
+        } else {
+          setCurrentConversation(null);
+        }
+        setIsAssessmentMode(isAssessmentMode || false);
       }
       fetchConversations();
     }
@@ -408,9 +434,12 @@ const Chat = () => {
   };
 
   const handleNewConversation = () => {
-    console.log('Chat - New Conversation button clicked'); // Debug log
+    console.log('Chat - New Conversation button clicked');
+    // Clear any existing conversation to ensure fresh start
+    setCurrentConversation(null);
+    localStorage.removeItem('chatState');
     setShowCompanyForm(true);
-    console.log('Chat - setShowCompanyForm to true'); // Debug log
+    console.log('Chat - setShowCompanyForm to true, cleared currentConversation');
   };
 
   const handleCompanyFormSubmit = async (companyData: CompanyInfoData) => {
