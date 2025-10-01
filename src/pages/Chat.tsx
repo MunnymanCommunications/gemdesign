@@ -206,7 +206,7 @@ const Chat = () => {
 
   const sendMessage = async (messageContent?: string, assessmentData?: any) => {
     const messageToSend = messageContent || inputMessage;
-    if (!messageToSend.trim() || !currentConversation || isLoading) return;
+    if (!messageToSend.trim() || !currentConversation || !user || isLoading) return;
 
     let userMessage = messageToSend.trim();
     
@@ -223,6 +223,18 @@ const Chat = () => {
     setIsLoading(true);
 
     try {
+      // Verify conversation exists and belongs to user before inserting message
+      const { data: convData, error: convError } = await supabase
+        .from('chat_conversations')
+        .select('id')
+        .eq('id', currentConversation)
+        .eq('user_id', user?.id)
+        .single();
+
+      if (convError || !convData) {
+        throw new Error('Invalid conversation. Please start a new one.');
+      }
+
       // Add user message to database
       const { data: userMessageData, error: userError } = await supabase
         .from('chat_messages')
@@ -566,7 +578,7 @@ const Chat = () => {
           </div>
 
           {/* Chat Interface */}
-          <div className={`${isConversationListCollapsed ? 'col-span-1' : 'md:col-span-2 lg:col-span-3'} ${!currentConversation ? 'hidden md:block' : 'block'}`}>
+          <div className={`${isConversationListCollapsed ? 'col-span-1' : 'md:col-span-2 lg:col-span-3'} block`}>
             <Card className="h-full flex flex-col">
               {currentConversation ? (
                 <>
