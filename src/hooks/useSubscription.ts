@@ -3,12 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
 interface Subscription {
-  id: string;
-  tier: string;
+  effective_tier: string;
   max_documents: number;
-  created_at: string;
-  updated_at: string;
-  status: string;
+  is_active: boolean;
+  source: string;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
 }
@@ -46,6 +44,7 @@ export const useSubscription = () => {
             tier: 'free',
             max_documents: 2,
             status: 'active',
+            source: 'free'
           })
           .select('*')
           .single();
@@ -54,7 +53,17 @@ export const useSubscription = () => {
           setError(createError.message);
           setSubscription(null);
         } else {
-          setSubscription(freeSub);
+          // Refetch RPC to get computed values
+          const { data: newData, error: rpcError } = await supabase.rpc('get_user_subscription_status', {
+            p_user_id: user.id
+          });
+
+          if (rpcError) {
+            setError(rpcError.message);
+            setSubscription(null);
+          } else {
+            setSubscription(newData);
+          }
         }
       }
     } catch (err) {
@@ -69,11 +78,12 @@ export const useSubscription = () => {
     fetchSubscription();
   }, [fetchSubscription]);
 
-  const isPro = subscription?.tier === 'pro';
-  const isEnterprise = subscription?.tier === 'enterprise';
+  const effectiveTier = subscription?.effective_tier;
+  const isPro = effectiveTier === 'pro';
+  const isEnterprise = effectiveTier === 'enterprise';
   const isProOrHigher = isPro || isEnterprise;
-  const isActive = subscription?.status === 'active' || subscription?.status === 'trialing';
-  const tier = subscription?.tier;
+  const isActive = subscription?.is_active;
+  const tier = effectiveTier;
 
   return {
     subscription,

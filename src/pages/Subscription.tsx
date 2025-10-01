@@ -146,8 +146,8 @@ const Subscription = () => {
     return <Layout><div className="flex justify-center items-center h-screen">Loading subscription details...</div></Layout>;
   }
 
-  const currentLimit = subscription ? getLimitByTier(subscription.tier) : 2;
-  const usagePercentage = subscription ? (documentCount / currentLimit) * 100 : 0;
+  const currentLimit = subscription ? subscription.max_documents : 2;
+  const usagePercentage = Math.min((documentCount / currentLimit) * 100, 100);
 
   return (
     <Layout>
@@ -163,18 +163,64 @@ const Subscription = () => {
             <p className="text-muted-foreground mt-2">Choose the perfect plan for your business needs</p>
           </header>
 
-          {subscription && (
+          {subscription ? (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="h-5 w-5" />
-                  Current Plan: {subscription.tier ? subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1) : 'Free'}
+                  Current Plan: {subscription.effective_tier.charAt(0).toUpperCase() + subscription.effective_tier.slice(1)}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h4 className="font-medium mb-2">Document Usage</h4>
+                  <div className="text-2xl font-bold mb-2">{documentCount} / {currentLimit}</div>
+                  <Progress value={usagePercentage} className="mb-2" />
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Subscription Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Status:</span>
+                      <Badge variant={subscription.is_active ? "default" : "destructive"}>{subscription.is_active ? "Active" : "Inactive"}</Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Source:</span>
+                      <span>{subscription.source}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Max Documents:</span>
+                      <span>{subscription.max_documents}</span>
+                    </div>
+                    {subscription.stripe_customer_id && (
+                      <div className="flex justify-between">
+                        <span>Customer ID:</span>
+                        <span className="font-mono text-xs truncate">{subscription.stripe_customer_id}</span>
+                      </div>
+                    )}
+                    {subscription.stripe_subscription_id && (
+                      <div className="flex justify-between">
+                        <span>Subscription ID:</span>
+                        <span className="font-mono text-xs truncate">{subscription.stripe_subscription_id}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                  Subscription Status: Not Found
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <h4 className="font-medium mb-2">Document Usage</h4>
-                <div className="text-2xl font-bold mb-2">{documentCount} / {currentLimit}</div>
-                <Progress value={usagePercentage} className="mb-2" />
+                <div className="text-2xl font-bold mb-2">{documentCount} / 2</div>
+                <Progress value={Math.min((documentCount / 2) * 100, 100)} className="mb-2" />
+                <p className="text-sm text-muted-foreground mt-4">No subscription record found. You may be on the free plan or need to contact support.</p>
               </CardContent>
             </Card>
           )}
@@ -182,7 +228,7 @@ const Subscription = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {plans.map((plan) => {
               const Icon = plan.icon;
-              const isCurrentPlan = subscription?.tier === plan.tier;
+              const isCurrentPlan = subscription?.effective_tier === plan.tier;
               const isButtonDisabled = (isCurrentPlan && plan.tier !== 'free') || checkoutLoading;
 
               return (
@@ -225,7 +271,7 @@ const Subscription = () => {
                           disabled={isButtonDisabled}
                           onClick={() => handleSubscribe(plan.priceId!)}
                         >
-                          {checkoutLoading ? 'Processing...' : (isCurrentPlan && plan.tier !== 'free' ? 'Current Plan' : (subscription?.tier === 'free' ? 'Upgrade' : 'Switch Plan'))}
+                          {checkoutLoading ? 'Processing...' : (isCurrentPlan && plan.tier !== 'free' ? 'Current Plan' : (subscription?.effective_tier === 'free' ? 'Upgrade' : 'Switch Plan'))}
                         </Button>
                       )}
                     </div>
