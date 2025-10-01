@@ -216,9 +216,9 @@ const AssessmentForm = ({ onSubmit, isLoading = false, onCancel }: AssessmentFor
       console.log('Satellite Assessment - User tier:', tier);
 
       // Get usage count
-      const { data: usage, error: usageError, count: usageCount } = await supabase
+      const { count: usageCount, error: usageError } = await supabase
         .from('assessment_usage')
-        .select('*', { count: 'exact', head: true })
+        .select('count(*)', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('tool_name', 'satellite_assessment');
 
