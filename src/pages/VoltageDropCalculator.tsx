@@ -123,7 +123,7 @@ const VoltageDropCalculatorPage = () => {
         <div className="max-w-6xl mx-auto text-center py-8">
           <h2 className="text-2xl font-semibold mb-2">Upgrade to Pro to Access This Feature</h2>
           <p className="text-muted-foreground mb-4">The Voltage Drop Calculator is a premium feature available to Pro and Enterprise subscribers.</p>
-          <Button onClick={() => window.location.href = '/subscription'>Upgrade Now</Button>
+          <Button onClick={() => { window.location.href = '/subscription' }}>Upgrade Now</Button>
         </div>
       </Layout>
     );
