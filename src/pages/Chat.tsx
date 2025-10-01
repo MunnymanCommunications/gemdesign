@@ -59,6 +59,7 @@ const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [showDocumentEditor, setShowDocumentEditor] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
@@ -232,7 +233,11 @@ const Chat = () => {
 
   const sendMessage = async (messageContent?: string, assessmentData?: any) => {
     const messageToSend = messageContent || inputMessage;
-    if (!messageToSend.trim() || !currentConversation || !user || isLoading) return;
+    console.log('sendMessage called with:', messageToSend);
+    if (isSending || !messageToSend.trim() || !currentConversation || !user || isLoading) {
+      console.log('sendMessage blocked: isSending or invalid state');
+      return;
+    }
 
     let userMessage = messageToSend.trim();
     
@@ -247,6 +252,7 @@ const Chat = () => {
     
     setInputMessage('');
     setIsLoading(true);
+    setIsSending(true);
 
     try {
       // Verify conversation exists and belongs to user before inserting message
@@ -293,6 +299,7 @@ const Chat = () => {
       let fullResponse = '';
 
       try {
+        console.log('Making AI API call');
         const response = await fetch(`https://gzgncmpytstovexfazdw.supabase.co/functions/v1/ai-chat`, {
           method: 'POST',
           headers: {
@@ -388,12 +395,14 @@ const Chat = () => {
       toast.error('Failed to send message');
     } finally {
       setIsLoading(false);
+      setIsSending(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      e.stopPropagation();
       sendMessage();
     }
   };
@@ -668,9 +677,9 @@ const Chat = () => {
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        disabled={isLoading}
+                        disabled={isLoading || isSending}
                       />
-                      <Button onClick={() => sendMessage()} disabled={isLoading}>
+                      <Button onClick={() => sendMessage()} disabled={isLoading || isSending}>
                         <Send className="h-4 w-4" />
                       </Button>
                     </div>
