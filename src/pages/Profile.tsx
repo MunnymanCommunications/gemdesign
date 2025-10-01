@@ -211,16 +211,35 @@ const Profile = () => {
 
   const handleLogoUpload = async (file: File) => {
     if (!file) return;
-
+  
     setUploadingLogo(true);
     try {
-      console.log('Profile - Logo upload initiated, but requires backend relay. File:', file.name);
-      // TODO: Relay to backend agent for implementation
-      // Currently disabled - backend needs to handle saving and integration with documents
-      toast.info('Logo upload requires backend implementation. Please contact your backend agent to set up the saving system.');
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user?.id}.${fileExt}`;
+  
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('logos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+  
+      if (uploadError) throw uploadError;
+  
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ logo_url: fileName })
+        .eq('id', user?.id);
+  
+      if (updateError) throw updateError;
+  
+      const publicUrl = supabase.storage.from('logos').getPublicUrl(fileName).data.publicUrl;
+      setProfile(prev => prev ? { ...prev, logo_url: fileName } : null);
+      setLogoPreview(publicUrl);
+      toast.success('Logo uploaded successfully');
     } catch (error) {
-      console.error('Error with logo upload relay:', error);
-      toast.error('Failed to process logo upload');
+      console.error('Error uploading logo:', error);
+      toast.error('Failed to upload logo');
     } finally {
       setUploadingLogo(false);
       setLogoFile(null);

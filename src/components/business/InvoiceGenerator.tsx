@@ -66,14 +66,35 @@ const InvoiceGenerator = () => {
   ]);
   const [notes, setNotes] = useState('');
   const [taxRate, setTaxRate] = useState(0.08);
-  const logoInputRef = useRef<HTMLInputElement>(null);
-
+  const loadImageAsBase64 = (url: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'));
+          return;
+        }
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = url;
+    });
+  };
+  
   // Load company info from profile
   useEffect(() => {
     if (user) {
       loadCompanyFromProfile();
     }
   }, [user]);
+  
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const loadCompanyFromProfile = async () => {
     try {
@@ -132,22 +153,47 @@ const InvoiceGenerator = () => {
     }));
   };
 
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
         toast.error('Logo file size must be less than 2MB');
         return;
       }
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
+  
+      setUploadingLogo(true);
+      try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user?.id}.${fileExt}`;
+  
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('logos')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: true
+          });
+  
+        if (uploadError) throw uploadError;
+  
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ logo_url: fileName })
+          .eq('id', user?.id);
+  
+        if (updateError) throw updateError;
+  
+        const publicUrl = supabase.storage.from('logos').getPublicUrl(fileName).data.publicUrl;
         setCompanyInfo(prev => ({
           ...prev,
-          logo: e.target?.result as string
+          logo: publicUrl
         }));
-      };
-      reader.readAsDataURL(file);
+        toast.success('Logo uploaded successfully');
+      } catch (error) {
+        console.error('Error uploading logo:', error);
+        toast.error('Failed to upload logo');
+      } finally {
+        setUploadingLogo(false);
+      }
     }
   };
 
@@ -169,23 +215,23 @@ const InvoiceGenerator = () => {
     try {
       const doc = new jsPDF();
       let yPosition = 20;
-
+  
       // Add logo if available
       if (companyInfo.logo) {
         try {
-          // For simplicity, assuming the logo URL is directly usable; in production, handle image loading if needed
-          doc.addImage(companyInfo.logo, 'PNG', 15, yPosition, 30, 15);
+          const logoBase64 = await loadImageAsBase64(companyInfo.logo);
+          doc.addImage(logoBase64, 'PNG', 15, yPosition, 30, 15);
+          yPosition += 20;
         } catch (imgError) {
           console.warn('Could not add logo to PDF:', imgError);
         }
-        yPosition += 20;
       }
-
+  
       // Company information
       doc.setFontSize(16);
       doc.text(companyInfo.name, 50, yPosition);
       yPosition += 10;
-
+  
       doc.setFontSize(10);
       doc.text(companyInfo.address, 50, yPosition);
       yPosition += 7;
@@ -195,20 +241,20 @@ const InvoiceGenerator = () => {
       yPosition += 7;
       doc.text(companyInfo.email, 50, yPosition);
       yPosition += 15;
-
+  
       // Invoice details
       doc.setFontSize(12);
       doc.text(`Invoice #${invoiceNumber}`, 140, 30);
       doc.text(`Date: ${invoiceDate}`, 140, 40);
       const due = dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       doc.text(`Due Date: ${due}`, 140, 50);
-
+  
       // Bill To
       yPosition = 80;
       doc.setFontSize(14);
       doc.text('Bill To:', 15, yPosition);
       yPosition += 10;
-
+  
       doc.setFontSize(10);
       doc.text(clientInfo.name, 15, yPosition);
       yPosition += 7;
@@ -216,7 +262,7 @@ const InvoiceGenerator = () => {
       yPosition += 7;
       doc.text(clientInfo.email, 15, yPosition);
       yPosition += 15;
-
+  
       // Line items header
       doc.setFontSize(12);
       doc.text('Description', 15, yPosition);
@@ -224,7 +270,7 @@ const InvoiceGenerator = () => {
       doc.text('Rate', 110, yPosition);
       doc.text('Amount', 140, yPosition);
       yPosition += 10;
-
+  
       // Line items
       const filteredItems = items.filter(item => item.description.trim());
       let subtotal = 0;
@@ -245,12 +291,12 @@ const InvoiceGenerator = () => {
           yPosition = 20;
         }
       });
-
+  
       // Totals
       yPosition += 10;
       const tax = subtotal * taxRate;
       const total = subtotal + tax;
-
+  
       doc.setFontSize(12);
       doc.text(`Subtotal: $${subtotal.toFixed(2)}`, 110, yPosition, { align: 'right' });
       yPosition += 10;
@@ -259,7 +305,7 @@ const InvoiceGenerator = () => {
       doc.setFont('helvetica', 'bold');
       doc.text(`Total: $${total.toFixed(2)}`, 110, yPosition, { align: 'right' });
       doc.setFont('helvetica', 'normal');
-
+  
       // Notes
       if (notes.trim()) {
         yPosition += 20;
@@ -277,9 +323,49 @@ const InvoiceGenerator = () => {
           }
         });
       }
-
+  
+      // Generate PDF blob for upload
+      const pdfBlob = doc.output('blob');
+      const fileName = `invoice_${invoiceNumber}_${Date.now()}.pdf`;
+  
+      // Upload to Supabase storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('generated-documents')
+        .upload(fileName, pdfBlob, {
+          contentType: 'application/pdf',
+          upsert: false
+        });
+  
+      if (uploadError) throw uploadError;
+  
+      const filePath = uploadData.path;
+  
+      // Insert into generated_documents table
+      const insertData = {
+        user_id: user?.id,
+        document_type: 'invoice',
+        document_category: 'invoices',
+        title: `Invoice #${invoiceNumber}`,
+        content: '', // PDF, so no text content
+        client_name: clientInfo.name,
+        amount: total,
+        file_path: filePath
+      };
+  
+      const { data: docData, error: insertError } = await supabase
+        .from('generated_documents')
+        .insert(insertData)
+        .select()
+        .single();
+  
+      if (insertError) {
+        console.error('Error saving to database:', insertError);
+        // Continue with download even if DB save fails
+      }
+  
+      // Download the PDF
       doc.save(`Invoice_${invoiceNumber}.pdf`);
-      toast.success('PDF Invoice generated and downloaded');
+      toast.success('PDF Invoice generated, saved, and downloaded');
     } catch (error) {
       console.error('Error generating PDF invoice:', error);
       toast.error('Failed to generate PDF invoice');
