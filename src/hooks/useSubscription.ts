@@ -23,18 +23,18 @@ export const useSubscription = () => {
       setLoading(false);
       return;
     }
-
+  
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('get_user_subscription_status', {
-        p_user_id: user.id
-      });
-
-      if (error) {
-        setError(error.message);
+      console.log('useSubscription: Invoking sync-subscription-status for fetch');
+      const result = await supabase.functions.invoke('sync-subscription-status');
+      console.log('useSubscription: Function invoke result:', result);
+  
+      if (result.error) {
+        setError(result.error.message);
         setSubscription(null);
-      } else if (data) {
-        setSubscription(data);
+      } else if (result.data && result.data.subscription) {
+        setSubscription(result.data.subscription);
       } else {
         // No active subscription, create a free one
         const { data: freeSub, error: createError } = await supabase
@@ -48,21 +48,20 @@ export const useSubscription = () => {
           })
           .select('*')
           .single();
-
+  
         if (createError) {
           setError(createError.message);
           setSubscription(null);
         } else {
-          // Refetch RPC to get computed values
-          const { data: newData, error: rpcError } = await supabase.rpc('get_user_subscription_status', {
-            p_user_id: user.id
-          });
-
-          if (rpcError) {
-            setError(rpcError.message);
+          // Refetch using edge function to get computed values
+          const newResult = await supabase.functions.invoke('sync-subscription-status');
+          if (newResult.error) {
+            setError(newResult.error.message);
             setSubscription(null);
+          } else if (newResult.data && newResult.data.subscription) {
+            setSubscription(newResult.data.subscription);
           } else {
-            setSubscription(newData);
+            setSubscription(null);
           }
         }
       }
@@ -76,6 +75,14 @@ export const useSubscription = () => {
 
   useEffect(() => {
     fetchSubscription();
+  
+    // Periodic sync
+    const interval = setInterval(() => {
+      console.log('useSubscription: Interval sync call');
+      fetchSubscription();
+    }, 60000); // Every minute
+  
+    return () => clearInterval(interval);
   }, [fetchSubscription]);
 
   const effectiveTier = subscription?.effective_tier;

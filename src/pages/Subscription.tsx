@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Check, X, Crown, Star, Shield, AlertTriangle } from 'lucide-react';
+import { Check, X, Crown, Star, Shield, AlertTriangle, FileText, Upload } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { useStripeSync } from '@/hooks/useStripeSync';
@@ -22,7 +22,6 @@ interface AdminSettings {
 }
 
 const Subscription = () => {
-  useStripeSync();
   const { user } = useAuth();
   const { subscription, loading: subLoading } = useSubscription();
   const [documentCount, setDocumentCount] = useState(0);
