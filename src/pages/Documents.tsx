@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { FileText, Upload, Shield } from 'lucide-react';
 
 interface UserSubscription {
-  tier: string;
+  tier: string;  // effective_tier from RPC
   max_documents: number;
 }
 
@@ -43,30 +43,46 @@ const Documents = () => {
 
   const fetchSubscription = async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .select('tier, max_documents')
-        .eq('user_id', user?.id)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc('get_user_subscription_status', {
+        p_user_id: user?.id
+      });
 
       if (error) throw error;
       
-      // If no subscription exists, create one
-      if (!data) {
-        const { data: newSub, error: createError } = await supabase
+      if (data) {
+        const effectiveSub = {
+          tier: data.effective_tier,
+          max_documents: data.max_documents
+        };
+        setSubscription(effectiveSub);
+      } else {
+        // No subscription, create free one
+        const { data: freeSub, error: createError } = await supabase
           .from('user_subscriptions')
           .insert({
             user_id: user?.id,
-            tier: 'base',
-            max_documents: 1
+            tier: 'free',
+            max_documents: 2,
+            status: 'active',
+            source: 'free'
           })
-          .select('tier, max_documents')
+          .select()
           .single();
-          
+        
         if (createError) throw createError;
-        setSubscription(newSub);
-      } else {
-        setSubscription(data);
+        
+        // Refetch RPC to get computed values
+        const { data: newData, error: rpcError } = await supabase.rpc('get_user_subscription_status', {
+          p_user_id: user?.id
+        });
+        
+        if (rpcError) throw rpcError;
+        
+        const effectiveSub = {
+          tier: newData.effective_tier,
+          max_documents: newData.max_documents
+        };
+        setSubscription(effectiveSub);
       }
     } catch (error) {
       console.error('Error fetching subscription:', error);
