@@ -76,7 +76,12 @@ const Profile = () => {
       } else if (data) {
         console.log('Profile - setting profile:', data); // Debug log
         setProfile(data);
-        setLogoPreview(data.logo_url || null);
+        if (data.logo_url) {
+          const publicUrl = supabase.storage.from('user-logos').getPublicUrl(data.logo_url).data.publicUrl;
+          setLogoPreview(publicUrl);
+        } else {
+          setLogoPreview(null);
+        }
       } else {
         console.log('Profile - no data, creating profile'); // Debug log
         await createProfile();
@@ -218,7 +223,7 @@ const Profile = () => {
       const fileName = `${user?.id}.${fileExt}`;
   
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('logos')
+        .from('user-logos')
         .upload(fileName, file, {
           cacheControl: '3600',
           upsert: true
@@ -233,7 +238,7 @@ const Profile = () => {
   
       if (updateError) throw updateError;
   
-      const publicUrl = supabase.storage.from('logos').getPublicUrl(fileName).data.publicUrl;
+      const publicUrl = supabase.storage.from('user-logos').getPublicUrl(fileName).data.publicUrl;
       setProfile(prev => prev ? { ...prev, logo_url: fileName } : null);
       setLogoPreview(publicUrl);
       toast.success('Logo uploaded successfully');
@@ -366,7 +371,7 @@ const Profile = () => {
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Current Logo:</p>
                   <img
-                    src={profile.logo_url}
+                    src={logoPreview || ''}
                     alt="Current Logo"
                     className="h-20 w-20 mx-auto object-contain rounded border mt-2"
                   />

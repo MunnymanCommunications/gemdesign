@@ -107,7 +107,7 @@ const InvoiceGenerator = () => {
       if (error) throw error;
       
       if (data) {
-        const logoUrl = data.logo_url ? supabase.storage.from('logos').getPublicUrl(data.logo_url).data.publicUrl : '';
+        const logoUrl = data.logo_url ? supabase.storage.from('user-logos').getPublicUrl(data.logo_url).data.publicUrl : '';
         setCompanyInfo(prev => ({
           ...prev,
           name: data.company || '',
@@ -161,13 +161,12 @@ const InvoiceGenerator = () => {
         return;
       }
   
-      setUploadingLogo(true);
       try {
         const fileExt = file.name.split('.').pop();
         const fileName = `${user?.id}.${fileExt}`;
   
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('logos')
+          .from('user-logos')
           .upload(fileName, file, {
             cacheControl: '3600',
             upsert: true
@@ -182,7 +181,7 @@ const InvoiceGenerator = () => {
   
         if (updateError) throw updateError;
   
-        const publicUrl = supabase.storage.from('logos').getPublicUrl(fileName).data.publicUrl;
+        const publicUrl = supabase.storage.from('user-logos').getPublicUrl(fileName).data.publicUrl;
         setCompanyInfo(prev => ({
           ...prev,
           logo: publicUrl
@@ -191,8 +190,6 @@ const InvoiceGenerator = () => {
       } catch (error) {
         console.error('Error uploading logo:', error);
         toast.error('Failed to upload logo');
-      } finally {
-        setUploadingLogo(false);
       }
     }
   };
