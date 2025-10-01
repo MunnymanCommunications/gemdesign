@@ -37,11 +37,11 @@ interface VoltageCalculation {
 
 const VoltageDropCalculatorPage = () => {
   const { user } = useAuth();
-  const { subscription, isPro, isActive, tier, isProOrHigher } = useSubscription();
+  const { subscription } = useSubscription();
 
-  const hasAccess = isProOrHigher || subscription?.id === 'granted-access';
+  const hasAccess = subscription?.effective_tier === 'pro' || subscription?.effective_tier === 'enterprise';
   
-  console.log('VoltageDropCalculator - hasAccess:', hasAccess, 'isProOrHigher:', isProOrHigher, 'subscription:', subscription); // Debug log
+  console.log('VoltageDropCalculator - hasAccess:', hasAccess, 'effective_tier:', subscription?.effective_tier, 'subscription:', subscription); // Debug log
 
   if (!hasAccess) {
     return (
@@ -76,13 +76,9 @@ const CalculatorContent = ({ user, subscription }: { user: any; subscription: an
 
   useEffect(() => {
     console.log('VoltageDropCalculator - Subscription data:', subscription);
-    console.log('VoltageDropCalculator - isPro:', subscription?.tier === 'pro', 'tier:', subscription?.tier, 'isActive:', subscription?.status === 'active');
+    console.log('VoltageDropCalculator - effective_tier:', subscription?.effective_tier, 'is_active:', subscription?.is_active);
   }, [subscription]);
 
-  useEffect(() => {
-    console.log('VoltageDropCalculator - Subscription data:', subscription);
-    console.log('VoltageDropCalculator - isPro:', isPro, 'tier:', tier, 'isActive:', isActive);
-  }, [subscription]);
 
   useEffect(() => {
     fetchCalculations();
