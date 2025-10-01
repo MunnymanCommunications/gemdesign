@@ -168,7 +168,7 @@ const Subscription = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="h-5 w-5" />
-                  Current Plan: {subscription.effective_tier.charAt(0).toUpperCase() + subscription.effective_tier.slice(1)}
+                  Current Plan: {subscription.effective_tier ? subscription.effective_tier.charAt(0).toUpperCase() + subscription.effective_tier.slice(1) : 'Unknown'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
