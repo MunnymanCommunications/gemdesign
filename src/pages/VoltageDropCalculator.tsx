@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import Layout from '@/components/layout/Layout';
 import SEO from '@/components/seo/SEO';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,89 +34,14 @@ interface VoltageCalculation {
   created_at: string;
 }
 
-interface SubscriptionData {
-  tier: string;
-}
 
 const VoltageDropCalculatorPage = () => {
   const { user } = useAuth();
-  const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { subscription, isPro, isActive, tier } = useSubscription();
 
-  useEffect(() => {
-    if (user) {
-      fetchSubscription();
-    } else {
-      setSubscription(null);
-      setLoading(false);
-    }
-  }, [user]);
-
-  const fetchSubscription = async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.rpc('get_user_subscription_status', {
-        p_user_id: user.id
-      });
-
-      if (error) throw error;
-      
-      if (data) {
-        const effectiveSub = {
-          tier: data.effective_tier
-        };
-        setSubscription(effectiveSub);
-      } else {
-        // No subscription, create free one
-        const { data: freeSub, error: createError } = await supabase
-          .from('user_subscriptions')
-          .insert({
-            user_id: user.id,
-            tier: 'free',
-            max_documents: 2,
-            status: 'active',
-            source: 'free'
-          })
-          .select()
-          .single();
-        
-        if (createError) throw createError;
-        
-        // Refetch RPC to get computed values
-        const { data: newData, error: rpcError } = await supabase.rpc('get_user_subscription_status', {
-          p_user_id: user.id
-        });
-        
-        if (rpcError) throw rpcError;
-        
-        const effectiveSub = {
-          tier: newData.effective_tier
-        };
-        setSubscription(effectiveSub);
-      }
-    } catch (error) {
-      console.error('Error fetching subscription:', error);
-      toast.error('Failed to load subscription details');
-      setSubscription({ tier: 'free' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex justify-center items-center min-h-[400px]">
-          <div className="text-lg">Loading subscription status...</div>
-        </div>
-      </Layout>
-    );
-  }
-
-  const hasAccess = subscription?.tier === 'pro' || subscription?.tier === 'enterprise';
+  const hasAccess = subscription?.tier === 'pro' || subscription?.tier === 'enterprise' || subscription?.id === 'granted-access';
   
-  console.log('VoltageDropCalculator - hasAccess:', hasAccess, 'user:', user, 'tier:', subscription?.tier); // Debug log
+  console.log('VoltageDropCalculator - hasAccess:', hasAccess, 'user:', user); // Debug log
 
   if (!hasAccess) {
     return (
@@ -123,16 +49,16 @@ const VoltageDropCalculatorPage = () => {
         <div className="max-w-6xl mx-auto text-center py-8">
           <h2 className="text-2xl font-semibold mb-2">Upgrade to Pro to Access This Feature</h2>
           <p className="text-muted-foreground mb-4">The Voltage Drop Calculator is a premium feature available to Pro and Enterprise subscribers.</p>
-          <Button onClick={() => { window.location.href = '/subscription' }}>Upgrade Now</Button>
+          <Button onClick={() => window.location.href = '/subscription'}>Upgrade Now</Button>
         </div>
       </Layout>
     );
   }
 
-  return <CalculatorContent user={user} />;
+  return <CalculatorContent user={user} subscription={subscription} />;
 };
 
-const CalculatorContent = ({ user }: { user: any }) => {
+const CalculatorContent = ({ user, subscription }: { user: any; subscription: any }) => {
   const [distance, setDistance] = useState('');
   const [current, setCurrent] = useState('');
   const [wireSize, setWireSize] = useState('');
@@ -146,6 +72,17 @@ const CalculatorContent = ({ user }: { user: any }) => {
   const [lastConversation, setLastConversation] = useState<Message[]>([]);
   const [calculations, setCalculations] = useState<VoltageCalculation[]>([]);
 
+
+
+  useEffect(() => {
+    console.log('VoltageDropCalculator - Subscription data:', subscription);
+    console.log('VoltageDropCalculator - isPro:', subscription?.tier === 'pro', 'tier:', subscription?.tier, 'isActive:', subscription?.status === 'active');
+  }, [subscription]);
+
+  useEffect(() => {
+    console.log('VoltageDropCalculator - Subscription data:', subscription);
+    console.log('VoltageDropCalculator - isPro:', isPro, 'tier:', tier, 'isActive:', isActive);
+  }, [subscription]);
 
   useEffect(() => {
     fetchCalculations();

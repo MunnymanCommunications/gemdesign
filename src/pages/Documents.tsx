@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import Layout from '@/components/layout/Layout';
 import SEO from '@/components/seo/SEO';
@@ -14,10 +15,6 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { FileText, Upload, Shield } from 'lucide-react';
 
-interface UserSubscription {
-  tier: string;  // effective_tier from RPC
-  max_documents: number;
-}
 
 const Documents = () => {
   const { user } = useAuth();
@@ -87,6 +84,9 @@ const Documents = () => {
     } catch (error) {
       console.error('Error fetching subscription:', error);
       toast.error('Failed to load subscription details');
+      setSubscription({ tier: 'free', max_documents: 2 });
+      setSubscription({ tier: 'free', max_documents: 2 });
+      setSubscription({ tier: 'free', max_documents: 2 });
     }
   };
 
